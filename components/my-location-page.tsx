@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { ALL_STATES } from "@/lib/all-states"
 import { STATE_COORDINATES } from "@/lib/state-coordinates"
@@ -14,6 +14,14 @@ import { MapPin, AlertTriangle, Droplet, Activity, Hospital, Users } from "lucid
 import dynamic from "next/dynamic"
 
 const InteractiveMap = dynamic(() => import("./interactive-map"), { ssr: false })
+
+function normalizePlaceName(value: string | null | undefined): string {
+  return (value ?? "")
+    .toLowerCase()
+    .replace(/&/g, "and")
+    .replace(/[^a-z0-9]+/g, "")
+    .trim()
+}
 
 const findNearestState = (userLat: number, userLng: number): string => {
   let nearestState = "Uttar Pradesh"
@@ -48,6 +56,48 @@ export function MyLocationPage() {
   const [loading, setLoading] = useState(false)
   const [locError, setLocError] = useState("")
   const [detectedLocation, setDetectedLocation] = useState<{ lat: number; lng: number } | null>(null)
+
+  type DiseaseDataApiResponse = {
+    updatedAt: string
+    states: Array<{
+      state: string
+      overallRisk?: "Low" | "Medium" | "High" | "Critical"
+      dengueRisk?: number
+      respiratoryRisk?: number
+      waterRisk?: number
+      environmentalFactors?: {
+        temp: number
+        humidity: number
+        rain: boolean
+        pm25: number
+        aqiUS?: number | null
+        waterQuality: "Good" | "Fair" | "Poor" | "Unknown"
+      }
+    }>
+  }
+
+  const [liveDiseaseData, setLiveDiseaseData] = useState<DiseaseDataApiResponse | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+
+    const loadLive = async () => {
+      try {
+        const res = await fetch("/api/disease-data", { cache: "no-store" })
+        if (!res.ok) throw new Error(`API error ${res.status}`)
+        const data = (await res.json()) as DiseaseDataApiResponse
+        if (!cancelled) setLiveDiseaseData(data)
+      } catch {
+        // Silent fallback: keep mock datasets working when API/keys are missing.
+        if (!cancelled) setLiveDiseaseData(null)
+      }
+    }
+
+    loadLive()
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   // All India disease data for filtering by state
   const allDiseaseData = [
@@ -84,7 +134,7 @@ export function MyLocationPage() {
     { region: "Puducherry", cases: 34, severity: "low", hospital_capacity: 76, population: 1244464 },
     { region: "Chandigarh", cases: 23, severity: "low", hospital_capacity: 80, population: 1055450 },
     { region: "Andaman & Nicobar", cases: 5, severity: "low", hospital_capacity: 65, population: 380581 },
-    { region: "Dadar & Nagar Haveli", cases: 3, severity: "low", hospital_capacity: 70, population: 342709 },
+    { region: "Dadra & Nagar Haveli", cases: 3, severity: "low", hospital_capacity: 70, population: 342709 },
     { region: "Daman & Diu", cases: 4, severity: "low", hospital_capacity: 71, population: 242911 },
     { region: "Lakshadweep", cases: 1, severity: "low", hospital_capacity: 60, population: 64473 },
   ]
@@ -210,8 +260,49 @@ export function MyLocationPage() {
     },
   ]
 
-  // Filter data by selected state
-  const locationData = allDiseaseData.find((d) => d.region === selectedState)
+  const liveSelected = useMemo(() => {
+    if (!selectedState || !liveDiseaseData?.states?.length) return null
+
+    const normalized = normalizePlaceName(selectedState)
+    const direct = liveDiseaseData.states.find((s) => s.state === selectedState)
+    if (direct) return direct
+
+    return liveDiseaseData.states.find((s) => normalizePlaceName(s.state) === normalized) ?? null
+  }, [liveDiseaseData, selectedState])
+
+  const locationData = useMemo(() => {
+    if (!selectedState) return null
+
+    const fallback = allDiseaseData.find((d) => d.region === selectedState) ?? null
+    const liveOverall = liveSelected?.overallRisk
+
+    const severityFromLive =
+      liveOverall === "Critical"
+        ? "critical"
+        : liveOverall === "High"
+          ? "high"
+          : liveOverall === "Medium"
+            ? "medium"
+            : liveOverall === "Low"
+              ? "low"
+              : null
+
+    return {
+      region: selectedState,
+      cases: fallback?.cases ?? 0,
+      population: fallback?.population ?? 0,
+      hospital_capacity: fallback?.hospital_capacity ?? 70,
+      severity: (severityFromLive ?? fallback?.severity ?? "low") as string,
+      live: Boolean(liveSelected),
+      liveRisks: {
+        dengue: typeof liveSelected?.dengueRisk === "number" ? liveSelected.dengueRisk : null,
+        respiratory: typeof liveSelected?.respiratoryRisk === "number" ? liveSelected.respiratoryRisk : null,
+        water: typeof liveSelected?.waterRisk === "number" ? liveSelected.waterRisk : null,
+      },
+      environmentalFactors: liveSelected?.environmentalFactors ?? null,
+    }
+  }, [allDiseaseData, liveSelected, selectedState])
+
   // If no data for selected state, show all data as fallback
   const locationPredictions = allPredictions.filter((p) => p.region === selectedState)
     .length > 0 ? allPredictions.filter((p) => p.region === selectedState) : allPredictions;
