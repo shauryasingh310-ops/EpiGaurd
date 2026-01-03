@@ -36,7 +36,7 @@
     "subtitle": "লাইভ পরিবেশগত উপাদানের উপর ভিত্তি করে রিয়েল-টাইম পূর্বাভাস নজরদারি",
     "highRiskZones": "উচ্চ ঝুঁকিপূর্ণ এলাকা",
     "primaryThreat": "প্রধান হুমকি",
-    "avgAirQuality": "গড় বায়ু মান (PM2.5)",
+    "avgAirQuality": "গড় বায়ু মান (AQI)",
     "waterRiskAlert": "জল ঝুঁকি সতর্কতা",
     "liveRiskMap": "লাইভ ঝুঁকি মানচিত্র",
     "vectorAnalysis": "ভেক্টর বিশ্লেষণ",
@@ -53,7 +53,7 @@
     "lastUpdated": "সর্বশেষ আপডেট",
     "citiesWithElevatedRisk": "উচ্চ ঝুঁকিপূর্ণ শহর",
     "drivenByWeather": "বর্তমান আবহাওয়ার দ্বারা প্রভাবিত",
-    "nationalAvg": "µg/m³ (জাতীয় গড়)",
+    "nationalAvg": "AQI (জাতীয় গড়)",
     "citiesWithContamination": "দূষিত শহর"
   },
   "communityReports": {

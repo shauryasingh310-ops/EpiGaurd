@@ -1,6 +1,5 @@
 
 "use client"
-import { MOCK_DISEASE_DATA } from "@/lib/mock-disease-data";
 import { ALL_STATES } from "@/lib/all-states";
 
 import { useState, useEffect } from "react"
@@ -34,25 +33,53 @@ import { getAriaLabel, getRole } from "@/lib/accessibility"
 export default function Dashboard() {
   const { t } = useTranslation()
   const [currentDate, setCurrentDate] = useState("")
-  const [loading, setLoading] = useState(false)
-  // Use centralized mock data for demo/static mode
-  // Show all states in the live risk map with mock data
-  const [riskData, setRiskData] = useState<any[]>(
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [riskData, setRiskData] = useState<any[]>([])
+
+  const getAqiColorClass = (aqi: number | null): string => {
+    if (typeof aqi !== 'number' || !isFinite(aqi)) return 'text-primary'
+    if (aqi <= 1) return 'text-green-500'
+    if (aqi === 2) return 'text-yellow-500'
+    return 'text-red-500'
+  }
+
+  type DiseaseDataApiResponse = {
+    updatedAt: string
+    states: Array<{
+      state: string
+      overallRisk?: 'Low' | 'Medium' | 'High' | 'Critical'
+      dengueRisk?: number
+      respiratoryRisk?: number
+      waterRisk?: number
+      primaryThreat?: string
+      environmentalFactors?: {
+        temp: number
+        humidity: number
+        rain: boolean
+        pm25: number
+        aqiUS?: number | null
+        waterQuality: 'Good' | 'Fair' | 'Poor' | 'Unknown'
+      }
+      cases?: number
+      deaths?: number
+    }>
+  }
+
+  const buildFallbackRiskData = () =>
     ALL_STATES.map((state, idx) => {
-      // Use a disease from mock data or rotate
-      const diseaseList = [
-        "Cholera", "Dengue", "Typhoid", "Hepatitis A", "Leptospirosis"
-      ];
-      const disease = diseaseList[idx % diseaseList.length];
-      const risk = 0.3 + 0.6 * ((idx % 10) / 10); // 0.3 to 0.9
+      const diseaseList = ['Cholera', 'Dengue', 'Typhoid', 'Hepatitis A', 'Leptospirosis']
+      const disease = diseaseList[idx % diseaseList.length]
+      const risk = 0.3 + 0.6 * ((idx % 10) / 10) // 0.3 to 0.9
       return {
         state,
         location: state,
         disease,
-        cases: 50 + (idx * 13) % 200,
-        deaths: (idx * 2) % 10,
+        cases: 0,
+        deaths: 0,
         risk,
-        overallRisk: idx % 4 === 0 ? "Critical" : idx % 3 === 0 ? "High" : idx % 2 === 0 ? "Medium" : "Low",
+        overallRisk:
+          idx % 4 === 0 ? 'Critical' : idx % 3 === 0 ? 'High' : idx % 2 === 0 ? 'Medium' : 'Low',
         dengueRisk: Math.round(risk * 100),
         respiratoryRisk: Math.round(risk * 80),
         waterRisk: Math.round(risk * 60),
@@ -62,14 +89,58 @@ export default function Dashboard() {
           humidity: 60 + (idx % 4) * 5,
           rain: idx % 3 === 0,
           pm25: 40 + (idx % 5) * 10,
-          waterQuality: idx % 4 === 0 ? "Poor" : "Good"
-        }
-      };
+          waterQuality: idx % 4 === 0 ? 'Poor' : 'Good',
+        },
+      }
     })
-  );
 
   useEffect(() => {
-    setCurrentDate(new Date().toLocaleString())
+    const load = async () => {
+      setLoading(true)
+      setError(null)
+
+      try {
+        const res = await fetch('/api/disease-data', { cache: 'no-store' })
+        if (!res.ok) throw new Error(`API error ${res.status}`)
+        const data = (await res.json()) as DiseaseDataApiResponse
+
+        const normalized = data.states.map(s => ({
+          state: s.state,
+          location: s.state,
+          disease: s.primaryThreat ?? 'Unknown',
+          cases: s.cases ?? 0,
+          deaths: s.deaths ?? 0,
+          overallRisk: s.overallRisk ?? 'Low',
+          dengueRisk: typeof s.dengueRisk === 'number' ? s.dengueRisk : 0,
+          respiratoryRisk: typeof s.respiratoryRisk === 'number' ? s.respiratoryRisk : 0,
+          waterRisk: typeof s.waterRisk === 'number' ? s.waterRisk : 0,
+          primaryThreat: s.primaryThreat ?? 'Unknown',
+          environmentalFactors: {
+            temp: s.environmentalFactors?.temp ?? 25,
+            humidity: s.environmentalFactors?.humidity ?? 60,
+            rain: s.environmentalFactors?.rain ?? false,
+            pm25: s.environmentalFactors?.pm25 ?? 40,
+            aqiUS: typeof s.environmentalFactors?.aqiUS === 'number' ? s.environmentalFactors.aqiUS : null,
+            waterQuality: s.environmentalFactors?.waterQuality ?? 'Unknown',
+          },
+        }))
+
+        setRiskData(normalized)
+        setCurrentDate(new Date(data.updatedAt).toLocaleString())
+      } catch {
+        setRiskData(buildFallbackRiskData())
+        setCurrentDate(new Date().toLocaleString())
+        setError('Live data unavailable. Showing fallback data.')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    load()
+  }, [])
+
+  useEffect(() => {
+    if (!riskData || riskData.length === 0) return
     
     // Save historical data
     riskData.forEach((risk) => {
@@ -114,6 +185,13 @@ export default function Dashboard() {
     if (score > 80) return "bg-red-500";
     if (score > 50) return "bg-orange-500";
     return "bg-green-500";
+  }
+
+  const getAqiBarColor = (aqi: number | null | undefined): string => {
+    if (typeof aqi !== 'number' || !isFinite(aqi)) return 'bg-green-500'
+    if (aqi <= 1) return 'bg-green-500'
+    if (aqi === 2) return 'bg-yellow-500'
+    return 'bg-red-500'
   }
 
   if (loading) {
@@ -190,14 +268,58 @@ export default function Dashboard() {
         </AlertDescription>
       </Alert>
 
+      {error && (
+        <Alert className="border-yellow-500/50 bg-yellow-500/10">
+          <AlertTriangle className="h-4 w-4 text-yellow-400" />
+          <AlertDescription className="text-yellow-200" suppressHydrationWarning>
+            {error}
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="bg-card border-border">
+        <Card className="bg-card border-border group relative">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
               <ShieldAlert className="w-4 h-4" />
-              <span suppressHydrationWarning>{t("dashboard.highRiskZones")}</span>
+              <span
+                className="cursor-help outline-none"
+                tabIndex={0}
+                aria-describedby="high-risk-zones-tooltip"
+                suppressHydrationWarning
+              >
+                {t("dashboard.highRiskZones")}
+              </span>
             </CardTitle>
+
+            <div
+              id="high-risk-zones-tooltip"
+              role="tooltip"
+              className="pointer-events-none invisible absolute z-50 top-12 left-4 w-72 max-w-[calc(100vw-2rem)] rounded-lg border border-border bg-card/60 backdrop-blur-xl p-3 text-xs text-muted-foreground shadow-lg opacity-0 translate-y-1 scale-[0.98] transition-[opacity,transform] duration-150 ease-out will-change-transform group-hover:visible group-hover:opacity-100 group-hover:translate-y-0 group-hover:scale-100 group-focus-within:visible group-focus-within:opacity-100 group-focus-within:translate-y-0 group-focus-within:scale-100"
+            >
+              <div className="text-sm font-medium text-foreground mb-2" suppressHydrationWarning>
+                {t("dashboard.highRiskZones")}
+              </div>
+              {(() => {
+                const names = criticalZones
+                  .map((z) => (z.location || z.state || '').toString())
+                  .filter(Boolean)
+                  .sort((a, b) => a.localeCompare(b))
+
+                if (names.length === 0) {
+                  return <div suppressHydrationWarning>{t("system.none") ?? 'None'}</div>
+                }
+
+                return (
+                  <div className="space-y-1">
+                    {names.map((n) => (
+                      <div key={n} className="text-foreground/90">{n}</div>
+                    ))}
+                  </div>
+                )
+              })()}
+            </div>
           </CardHeader>
           <CardContent>
             <p className="text-3xl font-bold text-red-500">{criticalZones.length}</p>
@@ -218,19 +340,66 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card className="bg-card border-border">
+        <Card className="bg-card border-border group relative">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
               <Wind className="w-4 h-4" />
-              <span suppressHydrationWarning>{t("dashboard.avgAirQuality")}</span>
+              <span
+                className="cursor-help outline-none"
+                tabIndex={0}
+                aria-describedby="aqi-index-tooltip"
+                suppressHydrationWarning
+              >
+                {t("dashboard.avgAirQuality")}
+              </span>
             </CardTitle>
+
+            <div
+              id="aqi-index-tooltip"
+              role="tooltip"
+              className="pointer-events-none invisible absolute z-50 top-12 left-4 w-72 max-w-[calc(100vw-2rem)] rounded-lg border border-border bg-card/70 backdrop-blur-md p-3 text-xs text-muted-foreground shadow-lg opacity-0 translate-y-1 scale-[0.98] transition-[opacity,transform] duration-150 ease-out will-change-transform group-hover:visible group-hover:opacity-100 group-hover:translate-y-0 group-hover:scale-100 group-focus-within:visible group-focus-within:opacity-100 group-focus-within:translate-y-0 group-focus-within:scale-100"
+            >
+              <div className="text-sm font-medium text-foreground mb-2">AQI Risk Index (US EPA)</div>
+              <div className="space-y-1">
+                <div><span className="font-medium text-foreground">1</span> — Good</div>
+                <div><span className="font-medium text-foreground">2</span> — Satisfactory</div>
+                <div><span className="font-medium text-foreground">3</span> — Moderate</div>
+                <div><span className="font-medium text-foreground">4</span> — Unhealthy</div>
+                <div><span className="font-medium text-foreground">5</span> — Very Unhealthy</div>
+                <div><span className="font-medium text-foreground">6</span> — Hazardous</div>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold text-primary">
-              {riskData.length > 0 && isFinite(riskData.reduce((acc, curr) => acc + curr.environmentalFactors.pm25, 0) / riskData.length)
-                ? Math.round(riskData.reduce((acc, curr) => acc + curr.environmentalFactors.pm25, 0) / riskData.length)
-                : 'N/A'}
-            </p>
+            {(() => {
+              const aqiValues = riskData
+                .map((r) => r.environmentalFactors?.aqiUS)
+                .filter((v: any) => typeof v === 'number' && isFinite(v)) as number[]
+
+              if (aqiValues.length > 0) {
+                const avgAqi = Math.round(aqiValues.reduce((a, b) => a + b, 0) / aqiValues.length)
+                return (
+                  <p className={`text-3xl font-bold ${getAqiColorClass(avgAqi)}`}>
+                    {avgAqi}
+                  </p>
+                )
+              }
+
+              const pm25Values = riskData
+                .map((r) => r.environmentalFactors?.pm25)
+                .filter((v: any) => typeof v === 'number' && isFinite(v)) as number[]
+
+              const avgPm25 =
+                pm25Values.length > 0
+                  ? Math.round(pm25Values.reduce((a, b) => a + b, 0) / pm25Values.length)
+                  : null
+
+              return (
+                <p className="text-3xl font-bold text-primary">
+                  {avgPm25 ?? 'N/A'}
+                </p>
+              )
+            })()}
             <p className="text-xs text-muted-foreground mt-1 text-wrap-balance" suppressHydrationWarning>{t("dashboard.nationalAvg")}</p>
           </CardContent>
         </Card>
@@ -311,7 +480,7 @@ export default function Dashboard() {
                           <span className="font-bold">{place.respiratoryRisk}%</span>
                         </div>
                         <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
-                          <div className={`h-full ${getProgressBarColor(place.respiratoryRisk)}`} style={{ width: `${place.respiratoryRisk}%` }}></div>
+                          <div className={`h-full ${getAqiBarColor(place.environmentalFactors?.aqiUS)}`} style={{ width: `${place.respiratoryRisk}%` }}></div>
                         </div>
                       </div>
 

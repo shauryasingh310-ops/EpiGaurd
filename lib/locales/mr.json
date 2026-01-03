@@ -36,7 +36,7 @@
     "subtitle": "थेट पर्यावरणीय घटकांवर आधारित रिअल-टाइम अंदाजित देखरेख",
     "highRiskZones": "उच्च धोका क्षेत्रे",
     "primaryThreat": "मुख्य धोका",
-    "avgAirQuality": "सरासरी हवेची गुणवत्ता (PM2.5)",
+    "avgAirQuality": "सरासरी हवेची गुणवत्ता (AQI)",
     "waterRiskAlert": "पाणी धोका सूचना",
     "liveRiskMap": "थेट धोका नकाशा",
     "vectorAnalysis": "वेक्टर विश्लेषण",
@@ -53,7 +53,7 @@
     "lastUpdated": "शेवटचे अद्यतन",
     "citiesWithElevatedRisk": "उच्च धोका असलेली शहरे",
     "drivenByWeather": "सध्याच्या हवामानावर आधारित",
-    "nationalAvg": "µg/m³ (राष्ट्रीय सरासरी)",
+    "nationalAvg": "AQI (राष्ट्रीय सरासरी)",
     "citiesWithContamination": "प्रदूषण असलेली शहरे"
   },
   "communityReports": {

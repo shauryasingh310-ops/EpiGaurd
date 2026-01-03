@@ -37,7 +37,7 @@
     "subtitle": "நிகழ்நிலை சுற்றுச்சூழல் காரணிகளின் அடிப்படையில் கணிப்பிடும் கண்காணிப்பு",
     "highRiskZones": "உயர் அபாய பகுதிகள்",
     "primaryThreat": "முக்கிய அச்சுறுத்தல்",
-    "avgAirQuality": "சராசரி காற்று தரம் (PM2.5)",
+    "avgAirQuality": "சராசரி காற்று தரம் (AQI)",
     "waterRiskAlert": "தண்ணீர் அபாய எச்சரிக்கை",
     "liveRiskMap": "நிகழ்நிலை அபாய வரைபடம்",
     "vectorAnalysis": "பரவல் காரணிகள் பகுப்பாய்வு",
@@ -54,7 +54,7 @@
     "lastUpdated": "கடைசியாக புதுப்பிக்கப்பட்டது",
     "citiesWithElevatedRisk": "அபாயம் அதிகமான நகரங்கள்",
     "drivenByWeather": "நிலவிய வானிலை காரணமாக",
-    "nationalAvg": "µg/m³ (தேசிய சராசரி)",
+    "nationalAvg": "AQI (தேசிய சராசரி)",
     "citiesWithContamination": "மாசுபாடு உள்ள நகரங்கள்"
   },
 

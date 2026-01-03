@@ -37,7 +37,7 @@
     "subtitle": "ప్రస్తుత పర్యావరణ కారణాల ఆధారంగా అంచనాలను పర్యవేక్షణ",
     "highRiskZones": "అధిక ప్రమాద ప్రాంతాలు",
     "primaryThreat": "ప్రధాన ముప్పు",
-    "avgAirQuality": "సగటు గాలి నాణ్యత (PM2.5)",
+    "avgAirQuality": "సగటు గాలి నాణ్యత (AQI)",
     "waterRiskAlert": "నీటి ప్రమాద హెచ్చరిక",
     "liveRiskMap": "ప్రస్తుత ప్రమాద మ్యాప్",
     "vectorAnalysis": "వ్యాధి కారకుల విశ్లేషణ",
@@ -54,7 +54,7 @@
     "lastUpdated": "చివరిసారిగా నవీకరించబడింది",
     "citiesWithElevatedRisk": "ఎక్కువ ప్రమాదం ఉన్న నగరాలు",
     "drivenByWeather": "హవామాన కారణంగా",
-    "nationalAvg": "µg/m³ (జాతీయ సగటు)",
+    "nationalAvg": "AQI (జాతీయ సగటు)",
     "citiesWithContamination": "మలినపరచబడిన నగరాలు"
   },
 

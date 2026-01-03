@@ -36,7 +36,7 @@
     "subtitle": "Real-time predictive surveillance based on live environmental vectors",
     "highRiskZones": "High Risk Zones",
     "primaryThreat": "Primary Threat",
-    "avgAirQuality": "Avg Air Quality (PM2.5)",
+    "avgAirQuality": "Avg Air Quality (AQI)",
     "waterRiskAlert": "Water Risk Alert",
     "liveRiskMap": "Live Risk Map",
     "vectorAnalysis": "Vector Analysis",
@@ -49,11 +49,11 @@
     "averageRiskFactors": "Average risk factors across monitored cities",
     "dengueBreedingIndex": "Dengue Breeding Index",
     "humidityRainfall": "Correlation: Humidity & Rainfall",
-    "dataSources": "Data Sources: OpenWeatherMap (Forecast), OpenAQ (Air), Data.gov.in (Water)",
+    "dataSources": "Data Sources: WeatherAPI (Weather/Air), Data.gov.in (Water)",
     "lastUpdated": "Last Updated",
     "citiesWithElevatedRisk": "Cities with elevated spread risk",
     "drivenByWeather": "Driven by current weather",
-    "nationalAvg": "µg/m³ (National Avg)",
+    "nationalAvg": "National Avg",
     "citiesWithContamination": "Cities with contamination"
   },
   "communityReports": {

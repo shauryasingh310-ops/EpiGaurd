@@ -36,7 +36,7 @@
     "subtitle": "लाइव पर्यावरणीय कारकों पर आधारित रियल-टाइम पूर्वानुमान निगरानी",
     "highRiskZones": "उच्च जोखिम क्षेत्र",
     "primaryThreat": "मुख्य खतरा",
-    "avgAirQuality": "औसत वायु गुणवत्ता (PM2.5)",
+    "avgAirQuality": "औसत वायु गुणवत्ता (AQI)",
     "waterRiskAlert": "जल जोखिम चेतावनी",
     "liveRiskMap": "लाइव जोखिम मानचित्र",
     "vectorAnalysis": "वेक्टर विश्लेषण",
@@ -53,7 +53,7 @@
     "lastUpdated": "अंतिम अपडेट",
     "citiesWithElevatedRisk": "उच्च जोखिम वाले शहर",
     "drivenByWeather": "वर्तमान मौसम से प्रभावित",
-    "nationalAvg": "µg/m³ (राष्ट्रीय औसत)",
+    "nationalAvg": "AQI (राष्ट्रीय औसत)",
     "citiesWithContamination": "प्रदूषण वाले शहर"
   },
   "communityReports": {

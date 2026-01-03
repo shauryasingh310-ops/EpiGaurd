@@ -17,6 +17,14 @@ import { simulationEngine } from '@/lib/simulation-engine';
 
 type StateRisk = { name: string; lat: number; lng: number; risk: number }
 
+function normalizePlaceName(value: string | null | undefined): string {
+  return (value ?? '')
+    .toLowerCase()
+    .replace(/&/g, 'and')
+    .replace(/[^a-z0-9]+/g, '')
+    .trim()
+}
+
 function severityToScore(severity: string): number {
   switch (severity) {
     case 'critical':
@@ -179,9 +187,10 @@ function HeatmapLayer({ enabled, points }: { enabled: boolean; points: HeatPoint
 }
 
 interface SearchBoxProps {
+  states: StateRisk[]
   onSelect: (state: StateRisk) => void
 }
-function SearchBox({ onSelect }: SearchBoxProps): ReactElement {
+function SearchBox({ states, onSelect }: SearchBoxProps): ReactElement {
   const [query, setQuery] = useState<string>('');
   const [results, setResults] = useState<StateRisk[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -199,11 +208,11 @@ function SearchBox({ onSelect }: SearchBoxProps): ReactElement {
       return;
     }
     setResults(
-      stateRiskData.filter((s) =>
+      states.filter((s) =>
         s.name.toLowerCase().includes(query.toLowerCase())
       )
     );
-  }, [query]);
+  }, [query, states]);
 
   return (
     <div className="absolute top-6 left-[30%] z-[1001] w-[min(360px,calc(100vw-48px))] -translate-x-1/2">
@@ -227,7 +236,7 @@ function SearchBox({ onSelect }: SearchBoxProps): ReactElement {
           if (e.key !== 'Enter') return;
           if (!query.trim()) return;
 
-          const exact = stateRiskData.find(
+          const exact = states.find(
             (s) => s.name.toLowerCase() === query.trim().toLowerCase()
           );
           if (exact) {
@@ -350,9 +359,82 @@ export default function InteractiveMap({ height = 500 }: { height?: number | str
   const [tileTheme, setTileTheme] = useState<'light' | 'dark'>('dark');
   const [showHeatmap, setShowHeatmap] = useState(true);
 
+  type DiseaseDataApiResponse = {
+    updatedAt: string
+    states: Array<{
+      state: string
+      riskScore: number
+    }>
+  }
+
+  const buildFallbackStateRiskData = (): StateRisk[] =>
+    ALL_STATES.map((name) => {
+      const coords = STATE_COORDINATES[name];
+      const fallbackRisk = 0.25;
+      const risk = clamp01(RISK_BY_STATE_FROM_MOCK[name] ?? RISK_BY_STATE_FROM_SIM[name] ?? fallbackRisk);
+      if (!coords) return null;
+      return { name, lat: coords.lat, lng: coords.lng, risk };
+    }).filter(Boolean) as StateRisk[];
+
+  const [states, setStates] = useState<StateRisk[]>(() => buildFallbackStateRiskData());
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await fetch('/api/disease-data', { cache: 'no-store' });
+        if (!res.ok) throw new Error(`API error ${res.status}`);
+        const data = (await res.json()) as DiseaseDataApiResponse;
+
+        const liveRiskByName = new Map<string, number>();
+        const liveRiskByNormalized = new Map<string, number>();
+        for (const row of data.states ?? []) {
+          if (!row?.state) continue;
+          const risk = clamp01(row.riskScore);
+          liveRiskByName.set(row.state, risk);
+          liveRiskByNormalized.set(normalizePlaceName(row.state), risk);
+        }
+
+        const merged: StateRisk[] = ALL_STATES
+          .map((name) => {
+            const coords = STATE_COORDINATES[name];
+            if (!coords) return null;
+
+            const normalized = normalizePlaceName(name);
+            const liveRisk =
+              liveRiskByName.get(name) ??
+              liveRiskByNormalized.get(normalized);
+
+            const fallbackRisk = 0.25;
+            const fallback = clamp01(RISK_BY_STATE_FROM_MOCK[name] ?? RISK_BY_STATE_FROM_SIM[name] ?? fallbackRisk);
+
+            return {
+              name,
+              lat: coords.lat,
+              lng: coords.lng,
+              risk: typeof liveRisk === 'number' ? liveRisk : fallback,
+            };
+          })
+          .filter(Boolean) as StateRisk[];
+
+        if (merged.length > 0) setStates(merged);
+      } catch {
+        // Keep fallback states
+      }
+    };
+
+    load();
+  }, []);
+
+  // If live state data refreshes, keep the selected state risk in sync.
+  useEffect(() => {
+    if (!selected) return;
+    const updated = states.find((s) => s.name === selected.name);
+    if (updated && updated.risk !== selected.risk) setSelected(updated);
+  }, [states, selected]);
+
   const heatPoints = useMemo<HeatPoint[]>(
-    () => stateRiskData.map((s) => [s.lat, s.lng, riskToHeatIntensity(s.risk)] as HeatPoint),
-    []
+    () => states.map((s) => [s.lat, s.lng, riskToHeatIntensity(s.risk)] as HeatPoint),
+    [states]
   );
 
   const tileConfig =
@@ -423,7 +505,7 @@ export default function InteractiveMap({ height = 500 }: { height?: number | str
           Dark
         </Button>
       </div>
-      <SearchBox onSelect={setSelected} />
+      <SearchBox states={states} onSelect={setSelected} />
       <InfoPanel
         selected={selected}
         onClear={() => setSelected(null)}
@@ -446,7 +528,7 @@ export default function InteractiveMap({ height = 500 }: { height?: number | str
           url={tileConfig.url}
         />
         <HeatmapLayer enabled={showHeatmap} points={heatPoints} />
-        {stateRiskData.map((state) => (
+        {states.map((state) => (
           <React.Fragment key={state.name}>
             <CircleMarker
               key={state.name + '-circle'}
