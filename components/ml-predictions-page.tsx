@@ -166,72 +166,7 @@ export function MLPredictionsPage() {
         </p>
       </div>
 
-      <Card className="bg-card border-border">
-        <CardHeader>
-          <CardTitle>{t("mlPredictions.analysisTitle")}</CardTitle>
-          <CardDescription>{t("mlPredictions.analysisDescription")}</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="space-y-2">
-            <div className="text-sm font-medium">{t("mlPredictions.stateLabel")}</div>
-            <select
-              value={selectedState}
-              onChange={(e) => setSelectedState(e.target.value)}
-              className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-              aria-label={t("mlPredictions.stateLabel")}
-            >
-              <option value="" disabled>
-                {t("mlPredictions.statePlaceholder")}
-              </option>
-              {ALL_STATES.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
-
-            {selectedState ? (
-              <div className="text-sm text-muted-foreground">
-                {(() => {
-                  const top = getTopRiskForState(selectedState);
-                  if (!top) return null;
-                  return (
-                    <span>
-                      {top.disease} • {(top.current_risk * 100).toFixed(0)}% risk
-                    </span>
-                  );
-                })()}
-              </div>
-            ) : null}
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Button onClick={handleAnalyze} disabled={aiLoading || !selectedState}>
-              {aiLoading ? t("mlPredictions.analyzingButton") : t("mlPredictions.analyzeButton")}
-            </Button>
-          </div>
-
-          {aiError ? (
-            <Alert variant="destructive">
-              <AlertTriangle />
-              <AlertTitle>{t("mlPredictions.analysisErrorTitle")}</AlertTitle>
-              <AlertDescription>
-                <p className="whitespace-pre-wrap">{aiError}</p>
-              </AlertDescription>
-            </Alert>
-          ) : null}
-
-          {aiResult ? (
-            <Alert>
-              <TrendingUp />
-              <AlertTitle>{t("mlPredictions.analysisResultTitle")}</AlertTitle>
-              <AlertDescription>
-                <p className="whitespace-pre-wrap">{aiResult}</p>
-              </AlertDescription>
-            </Alert>
-          ) : null}
-        </CardContent>
-      </Card>
+      {/* AI analysis section removed as requested */}
 
       <Tabs defaultValue="risk">
         <TabsList>

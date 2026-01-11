@@ -56,6 +56,14 @@ export default function Dashboard() {
   const [error, setError] = useState<string | null>(null)
   const [riskData, setRiskData] = useState<any[]>([])
   const [vectorState, setVectorState] = useState<string>("")
+  const [favoriteLocations, setFavoriteLocations] = useState<string[]>([])
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const prefs = preferencesStorage.get()
+      setFavoriteLocations(prefs.favoriteLocations || [])
+    }
+  }, [])
 
   const getAqiColorClass = (aqi: number | null): string => {
     if (typeof aqi !== 'number' || !isFinite(aqi)) return 'text-primary'
@@ -344,19 +352,6 @@ export default function Dashboard() {
         </div>
         <div className="flex gap-2">
           <button
-            onClick={() => {
-              if (typeof window !== "undefined" && "Notification" in window) {
-                notificationService.requestPermission()
-              }
-            }}
-            className="px-4 py-2 bg-card border border-border rounded-lg hover:bg-accent/10 transition-colors flex items-center gap-2"
-            aria-label="Enable notifications"
-            suppressHydrationWarning
-          >
-            <Bell className="w-4 h-4" />
-            <span className="hidden md:inline" suppressHydrationWarning>{t("system.notifications")}</span>
-          </button>
-          <button
             onClick={() => exportRiskData(riskData)}
             className="px-4 py-2 bg-card border border-border rounded-lg hover:bg-accent/10 transition-colors flex items-center gap-2"
             aria-label={t("common.export")}
@@ -529,7 +524,7 @@ export default function Dashboard() {
             <div
               id="water-risk-zones-tooltip"
               role="tooltip"
-              className="pointer-events-none invisible absolute z-50 top-12 left-4 w-72 max-w-[calc(100vw-2rem)] rounded-lg border border-border bg-card/60 backdrop-blur-xl p-3 text-xs text-muted-foreground shadow-lg opacity-0 translate-y-1 scale-[0.98] transition-[opacity,transform] duration-150 ease-out will-change-transform group-hover:visible group-hover:opacity-100 group-hover:translate-y-0 group-hover:scale-100 group-focus-within:visible group-focus-within:opacity-100 group-focus-within:translate-y-0 group-focus-within:scale-100"
+              className="pointer-events-none invisible absolute z-50 top-32 left-4 w-72 max-w-[calc(100vw-2rem)] rounded-lg border border-border bg-card/60 backdrop-blur-xl p-3 text-xs text-muted-foreground shadow-lg opacity-0 translate-y-1 scale-[0.98] transition-[opacity,transform] duration-150 ease-out will-change-transform group-hover:visible group-hover:opacity-100 group-hover:translate-y-0 group-hover:scale-100 group-focus-within:visible group-focus-within:opacity-100 group-focus-within:translate-y-0 group-focus-within:scale-100"
             >
               <div className="text-sm font-medium text-foreground mb-2" suppressHydrationWarning>
                 States
@@ -580,16 +575,25 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {riskData.map((place) => (
-                  <div
-                    key={place.location}
-                    className="p-4 bg-background rounded-lg border border-border flex flex-col md:flex-row items-start md:items-center justify-between gap-4"
-                    role={getRole("risk-meter")}
-                    aria-label={getAriaLabel("risk-meter", place.location)}
-                  >
+                {riskData.map((place) => {
+                  const isFavorite = favoriteLocations.includes(place.location)
+                  return (
+                    <div
+                      key={place.location}
+                      className={`p-4 rounded-lg border flex flex-col md:flex-row items-start md:items-center justify-between gap-4 relative transition-shadow duration-200 ${isFavorite ? 'border-2 border-blue-700 bg-gradient-to-br from-blue-700/80 via-blue-800/90 to-purple-800/90 shadow-[0_2px_16px_0_rgba(55,48,163,0.18)] ring-2 ring-purple-700' : 'bg-background border-border'}`}
+                      role={getRole("risk-meter")}
+                      aria-label={getAriaLabel("risk-meter", place.location)}
+                    >
+                      {/* Favorite badge */}
+                      {isFavorite && (
+                        <span className="absolute top-2 right-2 flex items-center gap-1 bg-gradient-to-r from-blue-700 via-blue-800 to-purple-700 text-white text-xs font-semibold px-2 py-0.5 rounded-full shadow border border-purple-700 z-10">
+                          <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor" className="inline-block mr-0.5"><path d="M10 15.27L16.18 19l-1.64-7.03L20 7.24l-7.19-.61L10 0 7.19 6.63 0 7.24l5.46 4.73L3.82 19z"/></svg>
+                          {t ? t('common.favorite') : 'Favorite'}
+                        </span>
+                      )}
 
                     {/* Location Info */}
-                    <div className="w-full md:w-1/4">
+                    <div className="w-full md:w-1/4 relative">
                       <div className="flex items-center gap-2">
                         <h4 className="font-bold text-lg">{place.location}</h4>
                         <Badge variant="outline" className={getRiskColor(place.overallRisk)} suppressHydrationWarning>
@@ -640,7 +644,8 @@ export default function Dashboard() {
                       </div>
                     </div>
                   </div>
-                ))}
+                  )
+                })}
               </div>
             </CardContent>
           </Card>

@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Settings, Bell, MapPin, Download, Trash2, Globe } from "lucide-react"
 import { preferencesStorage, UserPreferences } from "@/lib/storage"
-import { notificationService } from "@/lib/notifications"
 import { ALL_STATES } from "@/lib/all-states"
 import { LanguageSwitcher } from "@/components/language-switcher"
 
@@ -17,28 +16,6 @@ export function SettingsPage() {
   const { t } = useTranslation()
   const { data: session } = useSession()
   const [preferences, setPreferences] = useState<UserPreferences>(preferencesStorage.get())
-  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>("default")
-
-  useEffect(() => {
-    if (typeof window !== "undefined" && "Notification" in window) {
-      setNotificationPermission(Notification.permission)
-    }
-  }, [])
-
-  const handleToggleNotification = async () => {
-    if (notificationPermission === "default") {
-      const permission = await notificationService.requestPermission()
-      setNotificationPermission(permission)
-      if (permission === "granted") {
-        preferencesStorage.save({ notificationsEnabled: true })
-        setPreferences(preferencesStorage.get())
-      }
-    } else {
-      const newValue = !preferences.notificationsEnabled
-      preferencesStorage.save({ notificationsEnabled: newValue })
-      setPreferences(preferencesStorage.get())
-    }
-  }
 
   const handleToggleThreshold = (riskLevel: "Low" | "Medium" | "High" | "Critical") => {
     const updated = preferences.alertThresholds.map((t) =>
@@ -138,67 +115,6 @@ export function SettingsPage() {
         </CardContent>
       </Card>
 
-      {/* Notifications */}
-      <Card className="bg-card border-border">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Bell className="w-5 h-5" />
-            {t("settings.notifications")}
-          </CardTitle>
-          <CardDescription>{t("settings.configureAlerts")}</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium">{t("settings.browserNotifications")}</p>
-              <p className="text-sm text-muted-foreground">
-                {notificationPermission === "granted"
-                  ? t("settings.notificationsEnabled")
-                  : notificationPermission === "denied"
-                    ? t("settings.notificationsBlocked")
-                    : t("settings.clickToEnable")}
-              </p>
-            </div>
-            <Button
-              variant={preferences.notificationsEnabled ? "default" : "outline"}
-              onClick={handleToggleNotification}
-              disabled={notificationPermission === "denied"}
-            >
-              {preferences.notificationsEnabled ? t("common.enabled") : t("common.enable")}
-            </Button>
-          </div>
-
-          <div className="space-y-3">
-            <p className="font-medium">{t("settings.alertThresholds")}</p>
-            <p className="text-sm text-muted-foreground">
-              {t("settings.chooseRiskLevels")}
-            </p>
-            {preferences.alertThresholds.map((threshold) => (
-              <div key={threshold.riskLevel} className="flex items-center justify-between p-3 bg-background rounded border border-border">
-                <div>
-                  <p className="font-medium">{t(`settings.${threshold.riskLevel.toLowerCase()}Risk`)}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {threshold.riskLevel === "Critical"
-                      ? t("settings.immediateAlerts")
-                      : threshold.riskLevel === "High"
-                        ? t("settings.alertsForHighRisk")
-                        : threshold.riskLevel === "Medium"
-                          ? t("settings.alertsForMediumRisk")
-                          : t("settings.alertsForLowRisk")}
-                  </p>
-                </div>
-                <Button
-                  variant={threshold.enabled ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => handleToggleThreshold(threshold.riskLevel)}
-                >
-                  {threshold.enabled ? t("common.enabled") : t("common.disabled")}
-                </Button>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Favorite Locations */}
       <Card className="bg-card border-border">
