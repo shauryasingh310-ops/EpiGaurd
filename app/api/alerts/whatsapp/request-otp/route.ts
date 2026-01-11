@@ -80,5 +80,11 @@ export async function POST(req: Request) {
     )
   }
 
-  return NextResponse.json({ ok: true, to: normalized, expiresInMinutes: ttlMinutes })
+  const dryRun = process.env.WHATSAPP_DRY_RUN === 'true'
+  return NextResponse.json({
+    ok: true,
+    to: normalized,
+    expiresInMinutes: ttlMinutes,
+    ...(dryRun && process.env.NODE_ENV !== 'production' ? { debugCode: code } : {}),
+  })
 }
