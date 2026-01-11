@@ -37,9 +37,11 @@ model UserAlertSettings {
   selectedState   String
   browserEnabled  Boolean       @default(true)
   telegramEnabled Boolean       @default(false)
+  dailyDigestEnabled Boolean     @default(true)
   threshold       RiskThreshold @default(HIGH)
   cooldownMinutes Int           @default(60)
   lastAlertSentAt DateTime?
+  lastDailyDigestSentAt DateTime?
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 

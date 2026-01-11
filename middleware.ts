@@ -13,11 +13,15 @@ function isPublicPath(pathname: string): boolean {
   if (pathname.startsWith('/api/auth')) return true
   // Public machine-to-machine endpoints (secured within handlers via secrets/headers where needed)
   if (pathname === '/api/telegram/webhook') return true
+  if (pathname === '/api/telegram/bot') return true
   if (pathname === '/api/cron/risk-alerts') return true
+  if (pathname === '/api/cron/daily-digest') return true
   // Public read APIs used by the landing page and dashboard widgets
   if (pathname === '/api/disease-data') return true
   if (pathname === '/api/healthcare') return true
   if (pathname === '/api/predictions') return true
+  if (pathname === '/api/digest/state') return true
+  if (pathname === '/api/location/state') return true
   if (pathname === '/sign-in' || pathname === '/sign-up') return true
   if (pathname === '/privacy' || pathname === '/terms') return true
   if (pathname === '/favicon.ico' || pathname === '/manifest.json') return true

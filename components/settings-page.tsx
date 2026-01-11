@@ -26,6 +26,7 @@ type ServerTelegramSettings = {
     selectedState: string
     telegramEnabled: boolean
     browserEnabled: boolean
+    dailyDigestEnabled?: boolean
     threshold: "HIGH" | "CRITICAL"
     cooldownMinutes: number
   } | null
@@ -47,6 +48,7 @@ export function SettingsPage() {
   const tgEnabled = tgStatus?.settings?.telegramEnabled ?? false
   const tgThreshold = tgStatus?.settings?.threshold ?? "HIGH"
   const tgCooldown = tgStatus?.settings?.cooldownMinutes ?? 60
+  const tgDailyDigestEnabled = tgStatus?.settings?.dailyDigestEnabled ?? true
 
   useEffect(() => {
     if (typeof window !== "undefined" && "Notification" in window) {
@@ -123,6 +125,52 @@ export function SettingsPage() {
     } finally {
       setTgLoading(false)
     }
+  }
+
+  const detectMyState = async () => {
+    setTgLoading(true)
+    setTgError(null)
+
+    if (typeof window === "undefined" || !navigator.geolocation) {
+      setTgLoading(false)
+      setTgError("Location is not supported in this browser.")
+      return
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          const res = await fetch("/api/location/state", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+          })
+
+          const payload = (await res.json().catch(() => null)) as any
+          if (!res.ok || !payload?.ok || !payload?.state) {
+            throw new Error(payload?.error || `Failed to detect state (${res.status}).`)
+          }
+
+          const value = String(payload.state)
+          preferencesStorage.save({ selectedState: value })
+          setPreferences(preferencesStorage.get())
+          await saveTelegramSettings({ selectedState: value })
+        } catch (e) {
+          setTgError(e instanceof Error ? e.message : "Failed to detect state")
+        } finally {
+          setTgLoading(false)
+        }
+      },
+      (err) => {
+        setTgLoading(false)
+        if (err.code === err.PERMISSION_DENIED) {
+          setTgError("Location permission denied. Allow location access to auto-detect your state.")
+          return
+        }
+        setTgError("Unable to fetch your location. Try again.")
+      },
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 60_000 },
+    )
   }
 
   const createTelegramLink = async () => {
@@ -458,6 +506,12 @@ export function SettingsPage() {
 
               <div className="space-y-2">
                 <label className="block text-sm font-medium">Selected state</label>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button variant="outline" onClick={() => void detectMyState()} disabled={tgLoading}>
+                    {tgLoading ? "Detecting…" : "Auto-detect my state"}
+                  </Button>
+                  <div className="text-xs text-muted-foreground">Or choose manually below.</div>
+                </div>
                 <select
                   value={selectedState}
                   onChange={(e) => {
@@ -475,6 +529,20 @@ export function SettingsPage() {
                     </option>
                   ))}
                 </select>
+              </div>
+
+              <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-background rounded border border-border">
+                <div>
+                  <div className="font-medium">Daily digest</div>
+                  <div className="text-xs text-muted-foreground">Send one detailed update per day.</div>
+                </div>
+                <Button
+                  variant={tgDailyDigestEnabled ? "default" : "outline"}
+                  onClick={() => void saveTelegramSettings({ dailyDigestEnabled: !tgDailyDigestEnabled })}
+                  disabled={tgLoading}
+                >
+                  {tgDailyDigestEnabled ? "Enabled" : "Enable"}
+                </Button>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

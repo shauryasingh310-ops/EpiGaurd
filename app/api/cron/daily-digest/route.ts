@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server'
 
 import { prisma } from '@/lib/prisma'
-import { splitBullets } from '@/lib/otp'
 import { telegramSendMessage } from '@/lib/telegram'
+import { buildPreventions } from '@/lib/preventions'
 
 export const runtime = 'nodejs'
 
@@ -14,6 +14,15 @@ type DiseaseDataApiResponse = {
     riskLevel?: 'Low' | 'Medium' | 'High' | 'Critical'
     overallRisk?: 'Low' | 'Medium' | 'High' | 'Critical'
     primaryThreat?: string
+    drivers?: string[]
+    environmentalFactors?: {
+      temp: number
+      humidity: number
+      rain: boolean
+      pm25: number
+      aqiUS?: number | null
+      waterQuality: 'Good' | 'Fair' | 'Poor' | 'Unknown'
+    }
   }>
 }
 
@@ -22,9 +31,12 @@ function clamp01(value: number): number {
   return Math.max(0, Math.min(1, value))
 }
 
-function meetsThreshold(level: string | null | undefined, threshold: 'HIGH' | 'CRITICAL'): boolean {
-  if (threshold === 'CRITICAL') return level === 'Critical'
-  return level === 'High' || level === 'Critical'
+function isSameUtcDay(a: Date, b: Date): boolean {
+  return (
+    a.getUTCFullYear() === b.getUTCFullYear() &&
+    a.getUTCMonth() === b.getUTCMonth() &&
+    a.getUTCDate() === b.getUTCDate()
+  )
 }
 
 function getBaseUrl(): string {
@@ -45,35 +57,12 @@ async function fetchDiseaseData(baseUrl: string): Promise<DiseaseDataApiResponse
   }
 }
 
-async function fetchAiActions(baseUrl: string, state: string, primaryThreat: string, risk: number): Promise<string[]> {
-  try {
-    const resp = await fetch(`${baseUrl}/api/predictions`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        region: state,
-        disease: primaryThreat,
-        risk,
-        trend: 'stable',
-      }),
-    })
-
-    if (!resp.ok) return []
-    const payload = (await resp.json().catch(() => null)) as any
-    const analysis = typeof payload?.analysis === 'string' ? payload.analysis : ''
-    return splitBullets(analysis, 3)
-  } catch {
-    return []
-  }
-}
-
 function requireCronAuth(req: Request): boolean {
   // Vercel Cron requests include this header.
   if (req.headers.get('x-vercel-cron') === '1') return true
 
   const expected = process.env.CRON_SECRET
   if (!expected) {
-    // Dev friendliness: allow when secret not set.
     return process.env.NODE_ENV !== 'production'
   }
 
@@ -111,7 +100,7 @@ export async function GET(req: Request) {
   }
 
   const settings = await prisma.userAlertSettings.findMany({
-    where: { telegramEnabled: true },
+    where: { telegramEnabled: true, dailyDigestEnabled: true },
     include: {
       user: {
         select: {
@@ -123,13 +112,11 @@ export async function GET(req: Request) {
   })
 
   const byState = new Map<string, DiseaseDataApiResponse['states'][number]>()
-  for (const s of disease.states ?? []) {
-    byState.set(s.state, s)
-  }
+  for (const s of disease.states ?? []) byState.set(s.state, s)
 
+  const now = new Date()
   let sent = 0
   let skipped = 0
-  const now = Date.now()
 
   for (const row of settings) {
     const chatId = row.user.telegramChatId
@@ -138,7 +125,18 @@ export async function GET(req: Request) {
       continue
     }
 
-    const state = row.selectedState
+    const state = (row.selectedState || '').trim()
+    if (!state) {
+      skipped++
+      continue
+    }
+
+    const last = row.lastDailyDigestSentAt
+    if (last && isSameUtcDay(last, now)) {
+      skipped++
+      continue
+    }
+
     const snapshot = byState.get(state)
     if (!snapshot) {
       skipped++
@@ -147,55 +145,37 @@ export async function GET(req: Request) {
 
     const level = snapshot.overallRisk ?? snapshot.riskLevel ?? 'Low'
     const risk = clamp01(snapshot.riskScore)
-    const threshold = row.threshold
-
-    if (!meetsThreshold(level, threshold)) {
-      skipped++
-      continue
-    }
-
-    const last = row.lastAlertSentAt?.getTime() ?? 0
-    const cooldownMs = (row.cooldownMinutes ?? 60) * 60 * 1000
-    if (last && now - last < cooldownMs) {
-      skipped++
-      continue
-    }
-
     const riskPct = String(Math.round(risk * 100))
     const primaryThreat = (snapshot.primaryThreat ?? 'Unknown').toString()
 
-    const actions = await fetchAiActions(baseUrl, state, primaryThreat, risk)
-    const safeActions = actions.length
-      ? actions
-      : [
-          'Avoid unsafe water and use boiled/filtered water.',
-          'Increase hand hygiene and sanitation precautions.',
-          'Seek medical advice early if symptoms appear.',
-        ]
+    const preventions = buildPreventions({ risk, level, primaryThreat })
+
+    const env = snapshot.environmentalFactors
+    const envLine = env
+      ? `Env: ${Math.round(env.temp)}°C, ${Math.round(env.humidity)}% humidity, PM2.5 ${Math.round(env.pm25)}, Water ${env.waterQuality}`
+      : null
 
     const link = `${baseUrl}/dashboard?state=${encodeURIComponent(state)}`
 
     const text =
-      `EpiGuard Alert\n` +
-      `Risk: ${level}\n` +
+      `EpiGuard Daily Update\n` +
       `State: ${state}\n` +
-      `Risk score: ${riskPct}%\n` +
-      `Primary threat: ${primaryThreat}\n\n` +
-      `Recommended actions:\n` +
-      `- ${safeActions[0] ?? ''}\n` +
-      `- ${safeActions[1] ?? ''}\n` +
-      `- ${safeActions[2] ?? ''}\n\n` +
+      `Risk: ${level} (${riskPct}%)\n` +
+      `Primary threat: ${primaryThreat}\n` +
+      (envLine ? `${envLine}\n\n` : `\n`) +
+      `Preventions:\n` +
+      `- ${preventions[0] ?? ''}\n` +
+      `- ${preventions[1] ?? ''}\n` +
+      `- ${preventions[2] ?? ''}\n` +
+      `- ${preventions[3] ?? ''}\n` +
+      `- ${preventions[4] ?? ''}\n\n` +
       `Details: ${link}`
 
-    await telegramSendMessage({
-      chatId,
-      text,
-      disableWebPagePreview: true,
-    })
+    await telegramSendMessage({ chatId, text, disableWebPagePreview: true })
 
     await prisma.userAlertSettings.update({
       where: { id: row.id },
-      data: { lastAlertSentAt: new Date() },
+      data: { lastDailyDigestSentAt: now },
     })
 
     sent++

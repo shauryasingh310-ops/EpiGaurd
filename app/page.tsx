@@ -3,9 +3,11 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import { Activity, Droplet, Users, Ambulance, Brain, BarChart3, Menu, X, MapPin, PanelLeft, Settings } from "lucide-react"
 import { InteractiveMapModalButton } from "@/components/interactive-map-modal-button"
-import { TelegramRiskButton } from "@/components/telegram-risk-button"
+import { TelegramBotButton } from "@/components/telegram-bot-button"
 import { useTranslation } from "react-i18next"
 import { signOut, useSession } from "next-auth/react"
+import { notificationService } from "@/lib/notifications"
+import { preferencesStorage } from "@/lib/storage"
 import Dashboard from "./dashboard"
 import { WaterQualityPage } from "@/components/water-quality-page"
 import { CommunityReportingPage } from "@/components/community-reporting-page"
@@ -26,6 +28,55 @@ export default function Home() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [profileOpen, setProfileOpen] = useState(false)
   const profileRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    if (status !== "authenticated") return
+    if (typeof window === "undefined") return
+
+    const run = async () => {
+      try {
+        const today = new Date()
+        const key = `epiguard_daily_digest_${today.getUTCFullYear()}-${String(today.getUTCMonth() + 1).padStart(2, "0")}-${String(today.getUTCDate()).padStart(2, "0")}`
+        if (localStorage.getItem(key)) return
+
+        const localPrefs = preferencesStorage.get()
+        if (!localPrefs.notificationsEnabled) return
+
+        // Prefer server settings (browserEnabled + selectedState + dailyDigestEnabled)
+        const res = await fetch("/api/alerts/telegram/link-code", { cache: "no-store" })
+        const payload = (await res.json().catch(() => null)) as any
+
+        const selectedState = (payload?.settings?.selectedState || localPrefs.selectedState || "").toString().trim()
+        const browserEnabled = payload?.settings?.browserEnabled ?? true
+        const dailyEnabled = payload?.settings?.dailyDigestEnabled ?? true
+
+        if (!browserEnabled || !dailyEnabled) return
+        if (!selectedState) return
+
+        // Fetch digest details for the selected state.
+        const digestRes = await fetch(`/api/digest/state?state=${encodeURIComponent(selectedState)}`, { cache: "no-store" })
+        const digest = (await digestRes.json().catch(() => null)) as any
+        if (!digestRes.ok || !digest?.ok) return
+
+        const pct = Math.round(Number(digest.riskScore) * 100)
+        const title = `Daily Risk Update: ${digest.state}`
+        const body = `Risk: ${digest.overallRisk} (${pct}%)\nThreat: ${digest.primaryThreat}\n${Array.isArray(digest.preventions) ? `Prevention: ${digest.preventions[0]}` : ""}`
+
+        await notificationService.requestPermission()
+        await notificationService.show({
+          title,
+          body,
+          tag: `daily_digest_${digest.state}`,
+        })
+
+        localStorage.setItem(key, "1")
+      } catch {
+        // best-effort; ignore
+      }
+    }
+
+    void run()
+  }, [status])
 
   useEffect(() => {
     if (!profileOpen) return
@@ -161,7 +212,7 @@ export default function Home() {
             <h1 className="font-bold md:hidden">EpiGuard</h1>
           </div>
           <div className="flex items-center gap-2">
-            <TelegramRiskButton />
+            <TelegramBotButton />
             <InteractiveMapModalButton />
 
             <div className="relative" ref={profileRef}>

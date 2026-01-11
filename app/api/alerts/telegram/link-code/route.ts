@@ -48,6 +48,7 @@ type CreateLinkCodeBody = {
   selectedState?: string
   telegramEnabled?: boolean
   browserEnabled?: boolean
+  dailyDigestEnabled?: boolean
   threshold?: 'HIGH' | 'CRITICAL'
   cooldownMinutes?: number
 }
@@ -77,9 +78,10 @@ export async function POST(req: Request) {
     where: { userId },
     create: {
       userId,
-      selectedState: selectedState || existing?.selectedState || 'Uttar Pradesh',
+      selectedState: selectedState || existing?.selectedState || '',
       telegramEnabled: typeof body.telegramEnabled === 'boolean' ? body.telegramEnabled : false,
       browserEnabled: typeof body.browserEnabled === 'boolean' ? body.browserEnabled : true,
+      dailyDigestEnabled: typeof body.dailyDigestEnabled === 'boolean' ? body.dailyDigestEnabled : true,
       threshold: threshold ?? 'HIGH',
       cooldownMinutes: cooldownMinutes ?? 60,
     },
@@ -87,6 +89,7 @@ export async function POST(req: Request) {
       ...(selectedState ? { selectedState } : {}),
       ...(typeof body.telegramEnabled === 'boolean' ? { telegramEnabled: body.telegramEnabled } : {}),
       ...(typeof body.browserEnabled === 'boolean' ? { browserEnabled: body.browserEnabled } : {}),
+      ...(typeof body.dailyDigestEnabled === 'boolean' ? { dailyDigestEnabled: body.dailyDigestEnabled } : {}),
       ...(threshold ? { threshold } : {}),
       ...(typeof cooldownMinutes === 'number' ? { cooldownMinutes } : {}),
     },
