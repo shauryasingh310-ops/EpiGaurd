@@ -130,6 +130,8 @@ export async function POST(req: Request) {
             : null
 
 
+          const link = 'https://epigaurd.vercel.app/'
+
           const text =
             `EpiGuard Update\n` +
             `State: ${escapeHtml(digest.state)}\n` +
@@ -142,7 +144,7 @@ export async function POST(req: Request) {
             `- ${escapeHtml(preventions[2] ?? '')}\n` +
             `- ${escapeHtml(preventions[3] ?? '')}\n` +
             `- ${escapeHtml(preventions[4] ?? '')}\n\n` +
-            `Details: "https://epigaurd.vercel.app/"`
+            `Details: ${link}`
 
           await telegramSendMessage({ chatId, text, parseMode: 'HTML', disableWebPagePreview: true })
         }
