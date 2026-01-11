@@ -8,9 +8,22 @@ import bcrypt from 'bcryptjs'
 
 import { prisma } from '@/lib/prisma'
 
+const isProd = process.env.NODE_ENV === 'production'
+if (isProd) {
+  const missing: string[] = []
+  if (!process.env.NEXTAUTH_SECRET) missing.push('NEXTAUTH_SECRET')
+  if (!process.env.NEXTAUTH_URL) missing.push('NEXTAUTH_URL')
+  if (missing.length) {
+    // NextAuth will surface a generic "Server configuration" error to the client.
+    // This log makes the root cause visible in Vercel logs.
+    console.error(`[auth] Missing required env var(s): ${missing.join(', ')}`)
+  }
+}
+
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
   secret: process.env.NEXTAUTH_SECRET,
+  debug: process.env.NEXTAUTH_DEBUG === 'true',
   session: { strategy: 'jwt' },
   providers: [
     ...(process.env.GITHUB_ID && process.env.GITHUB_SECRET
