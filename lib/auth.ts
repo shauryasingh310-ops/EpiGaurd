@@ -8,6 +8,23 @@ import bcrypt from 'bcryptjs'
 
 import { prisma } from '@/lib/prisma'
 
+function normalizeBaseUrl(value: string | undefined): string {
+  const trimmed = (value ?? '').trim()
+  if (!trimmed) return ''
+  return trimmed.replace(/\/+$/, '')
+}
+
+// NextAuth requires NEXTAUTH_URL in production. On Vercel, this is commonly forgotten.
+// Infer a safe default from APP_BASE_URL (preferred) or VERCEL_URL.
+const inferredNextAuthUrl =
+  normalizeBaseUrl(process.env.NEXTAUTH_URL) ||
+  normalizeBaseUrl(process.env.APP_BASE_URL) ||
+  (process.env.VERCEL_URL ? `https://${normalizeBaseUrl(process.env.VERCEL_URL)}` : '')
+
+if (!process.env.NEXTAUTH_URL && inferredNextAuthUrl) {
+  process.env.NEXTAUTH_URL = inferredNextAuthUrl
+}
+
 const isProd = process.env.NODE_ENV === 'production'
 if (isProd) {
   const missing: string[] = []
@@ -24,6 +41,8 @@ export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
   secret: process.env.NEXTAUTH_SECRET,
   debug: process.env.NEXTAUTH_DEBUG === 'true',
+  // Required on platforms like Vercel (trust x-forwarded-* headers)
+  trustHost: true,
   session: { strategy: 'jwt' },
   providers: [
     ...(process.env.GITHUB_ID && process.env.GITHUB_SECRET
