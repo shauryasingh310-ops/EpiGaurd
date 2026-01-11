@@ -524,7 +524,7 @@ export default function Dashboard() {
             <div
               id="water-risk-zones-tooltip"
               role="tooltip"
-              className="pointer-events-none invisible absolute z-50 top-32 left-4 w-72 max-w-[calc(100vw-2rem)] rounded-lg border border-border bg-card/60 backdrop-blur-xl p-3 text-xs text-muted-foreground shadow-lg opacity-0 translate-y-1 scale-[0.98] transition-[opacity,transform] duration-150 ease-out will-change-transform group-hover:visible group-hover:opacity-100 group-hover:translate-y-0 group-hover:scale-100 group-focus-within:visible group-focus-within:opacity-100 group-focus-within:translate-y-0 group-focus-within:scale-100"
+              className="pointer-events-none invisible absolute z-50 top-12 left-4 w-72 max-w-[calc(100vw-2rem)] rounded-lg border border-border bg-card/60 backdrop-blur-xl p-3 text-xs text-muted-foreground shadow-lg opacity-0 translate-y-1 scale-[0.98] transition-[opacity,transform] duration-150 ease-out will-change-transform group-hover:visible group-hover:opacity-100 group-hover:translate-y-0 group-hover:scale-100 group-focus-within:visible group-focus-within:opacity-100 group-focus-within:translate-y-0 group-focus-within:scale-100"
             >
               <div className="text-sm font-medium text-foreground mb-2" suppressHydrationWarning>
                 States
