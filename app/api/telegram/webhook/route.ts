@@ -129,7 +129,6 @@ export async function POST(req: Request) {
             ? `Env: ${Math.round(env.temp)}°C, ${Math.round(env.humidity)}% humidity, PM2.5 ${Math.round(env.pm25)}, Water ${escapeHtml(env.waterQuality)}`
             : null
 
-          const link = `https://epigaurd.vercel.app/`
 
           const text =
             `EpiGuard Update\n` +
@@ -143,7 +142,7 @@ export async function POST(req: Request) {
             `- ${escapeHtml(preventions[2] ?? '')}\n` +
             `- ${escapeHtml(preventions[3] ?? '')}\n` +
             `- ${escapeHtml(preventions[4] ?? '')}\n\n` +
-            `Details: ${escapeHtml(link)}`
+            `Details: "https://epigaurd.vercel.app/"`
 
           await telegramSendMessage({ chatId, text, parseMode: 'HTML', disableWebPagePreview: true })
         }
