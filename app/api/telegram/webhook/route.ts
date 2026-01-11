@@ -129,7 +129,7 @@ export async function POST(req: Request) {
             ? `Env: ${Math.round(env.temp)}°C, ${Math.round(env.humidity)}% humidity, PM2.5 ${Math.round(env.pm25)}, Water ${escapeHtml(env.waterQuality)}`
             : null
 
-          const link = `${baseUrl}/dashboard?state=${encodeURIComponent(digest.state)}`
+          const link = `https://epigaurd.vercel.app/`
 
           const text =
             `EpiGuard Update\n` +
