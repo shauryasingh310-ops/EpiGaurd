@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import { Activity, Droplet, Users, Ambulance, Brain, BarChart3, Menu, X, MapPin, PanelLeft, Settings } from "lucide-react"
 import { InteractiveMapModalButton } from "@/components/interactive-map-modal-button"
+import { TelegramRiskButton } from "@/components/telegram-risk-button"
 import { useTranslation } from "react-i18next"
 import { signOut, useSession } from "next-auth/react"
 import Dashboard from "./dashboard"
@@ -160,6 +161,7 @@ export default function Home() {
             <h1 className="font-bold md:hidden">EpiGuard</h1>
           </div>
           <div className="flex items-center gap-2">
+            <TelegramRiskButton />
             <InteractiveMapModalButton />
 
             <div className="relative" ref={profileRef}>
