@@ -1,6 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
+import { pathToFileURL } from 'node:url'
 
 import { createClient } from '@libsql/client'
 
@@ -87,7 +88,7 @@ async function applyMigrationSql(client, sqlText) {
   await client.execute(sqlText)
 }
 
-async function main() {
+export async function runTursoMigrations() {
   const { url, authToken } = parseDbConfig()
 
   if (!authToken) {
@@ -155,7 +156,17 @@ async function main() {
   }
 }
 
-main().catch((e) => {
-  console.error(e instanceof Error ? e.message : e)
-  process.exit(1)
-})
+function isMainModule() {
+  try {
+    return pathToFileURL(process.argv[1]).href === import.meta.url
+  } catch {
+    return false
+  }
+}
+
+if (isMainModule()) {
+  runTursoMigrations().catch((e) => {
+    console.error(e instanceof Error ? e.message : e)
+    process.exit(1)
+  })
+}

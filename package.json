@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "build": "pnpm run prisma:generate && next build",
+    "build": "pnpm run prisma:generate && node scripts/maybe-turso-migrate.mjs && next build",
     "dev": "next dev",
     "lint": "eslint .",
     "postinstall": "prisma generate --schema prisma/schema.prisma",
