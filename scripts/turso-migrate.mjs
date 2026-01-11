@@ -136,18 +136,11 @@ async function main() {
       }
 
       try {
-        await client.execute('BEGIN')
         await applyMigrationSql(client, sqlText)
         await markMigration(client, name)
-        await client.execute('COMMIT')
         applied++
         console.log(`Applied: ${name}`)
       } catch (e) {
-        try {
-          await client.execute('ROLLBACK')
-        } catch {
-          // ignore rollback errors
-        }
         throw new Error(`Failed applying migration ${name}: ${e instanceof Error ? e.message : String(e)}`)
       }
     }
