@@ -15,8 +15,7 @@ export default function PrivacyPolicyPage() {
 
         <section className="space-y-3 text-sm leading-6">
           <p>
-            EpiGuard is a disease outbreak monitoring dashboard. This Privacy Policy explains what data we collect, how we use it,
-            and the choices you have.
+
           </p>
 
           <h2 className="text-base font-semibold">Data we collect</h2>
@@ -25,7 +24,7 @@ export default function PrivacyPolicyPage() {
               <span className="font-medium">Account data</span>: email, name, and authentication identifiers (when you sign in).
             </li>
             <li>
-              <span className="font-medium">Alert settings</span>: selected state, thresholds, cooldowns, and (optional) WhatsApp phone number.
+              <span className="font-medium">Alert settings</span>: selected state, thresholds, cooldowns, and (optional) Telegram chat link.
             </li>
             <li>
               <span className="font-medium">Community reports</span>: reports you submit in the app (content and region).
@@ -35,17 +34,19 @@ export default function PrivacyPolicyPage() {
             </li>
           </ul>
 
+
+
           <h2 className="text-base font-semibold">How we use data</h2>
           <ul className="list-disc pl-5 space-y-1">
             <li>Provide dashboard features and personalize your selected region/state.</li>
-            <li>Send alerts you opt into (browser notifications and/or WhatsApp).</li>
+            <li>Send alerts you opt into (browser notifications and/or Telegram).</li>
             <li>Improve reliability, prevent abuse, and debug issues.</li>
           </ul>
 
-          <h2 className="text-base font-semibold">WhatsApp alerts</h2>
+          <h2 className="text-base font-semibold">Telegram alerts</h2>
           <p>
-            If you enable WhatsApp alerts, we store your phone number and alert preferences to send risk notifications. You can disable
-            WhatsApp alerts at any time from Settings.
+            If you enable Telegram alerts, we store your Telegram chat link details (e.g., chat ID and optional username) and alert
+            preferences to send risk notifications. You can disable Telegram alerts at any time from Settings.
           </p>
 
           <h2 className="text-base font-semibold">Data retention</h2>

@@ -13,17 +13,17 @@ model User {
   image        String?
   emailVerified DateTime?
   passwordHash String?
-  phoneNumber  String?  @unique
-  phoneVerified Boolean @default(false)
-  whatsappOptIn Boolean @default(false)
-  whatsappOptInAt DateTime?
+  telegramChatId String?
+  telegramUsername String?
+  telegramOptIn Boolean @default(false)
+  telegramOptInAt DateTime?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
   accounts Account[]
   sessions Session[]
   alertSettings UserAlertSettings?
-  phoneVerifications PhoneVerification[]
+  telegramLinkCodes TelegramLinkCode[]
 }
 
 enum RiskThreshold {
@@ -36,7 +36,7 @@ model UserAlertSettings {
   userId          String        @unique
   selectedState   String
   browserEnabled  Boolean       @default(true)
-  whatsappEnabled Boolean       @default(false)
+  telegramEnabled Boolean       @default(false)
   threshold       RiskThreshold @default(HIGH)
   cooldownMinutes Int           @default(60)
   lastAlertSentAt DateTime?
@@ -48,14 +48,12 @@ model UserAlertSettings {
   @@index([selectedState])
 }
 
-model PhoneVerification {
-  id         String   @id @default(cuid())
-  userId     String
-  phoneNumber String
-  codeHash   String
-  expiresAt  DateTime
-  attempts   Int      @default(0)
-  createdAt  DateTime @default(now())
+model TelegramLinkCode {
+  id        String   @id @default(cuid())
+  userId    String
+  code      String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 

@@ -200,7 +200,7 @@
 
 ### 13. **Advanced Features** (0% Complete)
 **What's Needed:**
-- ❌ Social sharing (Twitter, Facebook, WhatsApp)
+- ❌ Social sharing (Twitter, Facebook, Telegram)
 - ❌ Export to PDF with better formatting
 - ❌ Print-friendly views
 - ❌ Data visualization improvements

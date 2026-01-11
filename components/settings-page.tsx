@@ -14,13 +14,17 @@ import { notificationService } from "@/lib/notifications"
 import { ALL_STATES } from "@/lib/all-states"
 import { LanguageSwitcher } from "@/components/language-switcher"
 
-type ServerWhatsAppSettings = {
-  phoneNumber: string | null
-  phoneVerified: boolean
-  whatsappOptIn: boolean
+type ServerTelegramSettings = {
+  telegram: {
+    hasBot: boolean
+    botUsername: string | null
+    chatIdLinked: boolean
+    telegramUsername: string | null
+    telegramOptIn: boolean
+  }
   settings: {
     selectedState: string
-    whatsappEnabled: boolean
+    telegramEnabled: boolean
     browserEnabled: boolean
     threshold: "HIGH" | "CRITICAL"
     cooldownMinutes: number
@@ -34,16 +38,15 @@ export function SettingsPage() {
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>("default")
   const [saveSuccess, setSaveSuccess] = useState(false)
 
-  const [waStatus, setWaStatus] = useState<ServerWhatsAppSettings | null>(null)
-  const [waLoading, setWaLoading] = useState(false)
-  const [waError, setWaError] = useState<string | null>(null)
-  const [waPhone, setWaPhone] = useState("")
-  const [waOtp, setWaOtp] = useState("")
+  const [tgStatus, setTgStatus] = useState<ServerTelegramSettings | null>(null)
+  const [tgLoading, setTgLoading] = useState(false)
+  const [tgError, setTgError] = useState<string | null>(null)
+  const [tgStartLink, setTgStartLink] = useState<string | null>(null)
 
-  const selectedState = waStatus?.settings?.selectedState || preferences.selectedState || ""
-  const waEnabled = waStatus?.settings?.whatsappEnabled ?? false
-  const waThreshold = waStatus?.settings?.threshold ?? "HIGH"
-  const waCooldown = waStatus?.settings?.cooldownMinutes ?? 60
+  const selectedState = tgStatus?.settings?.selectedState || preferences.selectedState || ""
+  const tgEnabled = tgStatus?.settings?.telegramEnabled ?? false
+  const tgThreshold = tgStatus?.settings?.threshold ?? "HIGH"
+  const tgCooldown = tgStatus?.settings?.cooldownMinutes ?? 60
 
   useEffect(() => {
     if (typeof window !== "undefined" && "Notification" in window) {
@@ -56,29 +59,29 @@ export function SettingsPage() {
 
     const load = async () => {
       if (!session?.user?.id) {
-        setWaStatus(null)
+        setTgStatus(null)
+        setTgStartLink(null)
         return
       }
-      setWaLoading(true)
-      setWaError(null)
+      setTgLoading(true)
+      setTgError(null)
       try {
-        const res = await fetch("/api/alerts/whatsapp/settings", { cache: "no-store" })
+        const res = await fetch("/api/alerts/telegram/link-code", { cache: "no-store" })
         if (!res.ok) {
           const payload = (await res.json().catch(() => null)) as any
-          throw new Error(payload?.error || `Failed to load WhatsApp settings (${res.status}).`)
+          throw new Error(payload?.error || `Failed to load Telegram settings (${res.status}).`)
         }
-        const data = (await res.json()) as ServerWhatsAppSettings
+        const data = (await res.json()) as ServerTelegramSettings
         if (cancelled) return
-        setWaStatus(data)
-        setWaPhone(data.phoneNumber || "")
+        setTgStatus(data)
         if (data.settings?.selectedState) {
           preferencesStorage.save({ selectedState: data.settings.selectedState })
           setPreferences(preferencesStorage.get())
         }
       } catch (e) {
-        if (!cancelled) setWaError(e instanceof Error ? e.message : "Failed to load WhatsApp settings")
+        if (!cancelled) setTgError(e instanceof Error ? e.message : "Failed to load Telegram settings")
       } finally {
-        if (!cancelled) setWaLoading(false)
+        if (!cancelled) setTgLoading(false)
       }
     }
 
@@ -88,11 +91,11 @@ export function SettingsPage() {
     }
   }, [session?.user?.id])
 
-  const saveWhatsAppSettings = async (updates: Record<string, any>) => {
-    setWaLoading(true)
-    setWaError(null)
+  const saveTelegramSettings = async (updates: Record<string, any>) => {
+    setTgLoading(true)
+    setTgError(null)
     try {
-      const res = await fetch("/api/alerts/whatsapp/settings", {
+      const res = await fetch("/api/alerts/telegram/link-code", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updates),
@@ -100,9 +103,13 @@ export function SettingsPage() {
       const payload = (await res.json().catch(() => null)) as any
       if (!res.ok) throw new Error(payload?.error || `Failed to save (${res.status}).`)
 
-      const refreshed = await fetch("/api/alerts/whatsapp/settings", { cache: "no-store" })
-      const data = (await refreshed.json()) as ServerWhatsAppSettings
-      setWaStatus(data)
+      if (typeof payload?.startLink === "string" && payload.startLink) {
+        setTgStartLink(payload.startLink)
+      }
+
+      const refreshed = await fetch("/api/alerts/telegram/link-code", { cache: "no-store" })
+      const data = (await refreshed.json()) as ServerTelegramSettings
+      setTgStatus(data)
 
       if (typeof updates.selectedState === "string") {
         preferencesStorage.save({ selectedState: updates.selectedState })
@@ -112,57 +119,14 @@ export function SettingsPage() {
       setSaveSuccess(true)
       setTimeout(() => setSaveSuccess(false), 2500)
     } catch (e) {
-      setWaError(e instanceof Error ? e.message : "Failed to save WhatsApp settings")
+      setTgError(e instanceof Error ? e.message : "Failed to save Telegram settings")
     } finally {
-      setWaLoading(false)
+      setTgLoading(false)
     }
   }
 
-  const requestOtp = async () => {
-    setWaLoading(true)
-    setWaError(null)
-    try {
-      const res = await fetch("/api/alerts/whatsapp/request-otp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phoneNumber: waPhone }),
-      })
-      const payload = (await res.json().catch(() => null)) as any
-      if (!res.ok) throw new Error(payload?.error || payload?.details || `Failed to send OTP (${res.status}).`)
-
-      setSaveSuccess(true)
-      setTimeout(() => setSaveSuccess(false), 2500)
-    } catch (e) {
-      setWaError(e instanceof Error ? e.message : "Failed to request OTP")
-    } finally {
-      setWaLoading(false)
-    }
-  }
-
-  const verifyOtp = async () => {
-    setWaLoading(true)
-    setWaError(null)
-    try {
-      const res = await fetch("/api/alerts/whatsapp/verify-otp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code: waOtp }),
-      })
-      const payload = (await res.json().catch(() => null)) as any
-      if (!res.ok) throw new Error(payload?.error || payload?.details || `Failed to verify (${res.status}).`)
-
-      const refreshed = await fetch("/api/alerts/whatsapp/settings", { cache: "no-store" })
-      const data = (await refreshed.json()) as ServerWhatsAppSettings
-      setWaStatus(data)
-      setWaOtp("")
-
-      setSaveSuccess(true)
-      setTimeout(() => setSaveSuccess(false), 2500)
-    } catch (e) {
-      setWaError(e instanceof Error ? e.message : "Failed to verify OTP")
-    } finally {
-      setWaLoading(false)
-    }
+  const createTelegramLink = async () => {
+    await saveTelegramSettings({})
   }
 
   const handleToggleNotification = async () => {
@@ -433,64 +397,64 @@ export function SettingsPage() {
         </CardContent>
       </Card>
 
-      {/* WhatsApp Alerts */}
+      {/* Telegram Alerts */}
       <Card className="bg-card border-border">
         <CardHeader>
-          <CardTitle>WhatsApp Alerts</CardTitle>
-          <CardDescription>
-            Get WhatsApp messages when your selected state enters High/Critical risk.
-          </CardDescription>
+          <CardTitle>Telegram Alerts</CardTitle>
+          <CardDescription>Get Telegram messages when your selected state enters High/Critical risk.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {!session ? (
             <Alert>
-              <AlertDescription>
-                Sign in to enable WhatsApp alerts (phone numbers are stored server-side).
-              </AlertDescription>
+              <AlertDescription>Sign in to enable Telegram alerts.</AlertDescription>
             </Alert>
           ) : (
             <>
-              {waError && (
+              {tgError && (
                 <Alert className="border-red-500/40 bg-red-500/10">
-                  <AlertDescription className="text-red-200">{waError}</AlertDescription>
+                  <AlertDescription className="text-red-200">{tgError}</AlertDescription>
                 </Alert>
               )}
 
-              <div className="space-y-2">
-                <label className="block text-sm font-medium">WhatsApp phone number</label>
-                <input
-                  value={waPhone}
-                  onChange={(e) => setWaPhone(e.target.value)}
-                  placeholder="+911234567890"
-                  className="w-full px-3 py-2 bg-background border border-border rounded-md"
-                />
-                <div className="flex flex-wrap gap-2">
-                  <Button variant="outline" onClick={requestOtp} disabled={waLoading || !waPhone}>
-                    {waLoading ? "Working…" : "Send OTP"}
-                  </Button>
-                  <Badge variant="outline">
-                    {waStatus?.phoneVerified ? "Verified" : "Not verified"}
-                  </Badge>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  You’ll receive an OTP on WhatsApp (requires approved Meta template).
-                </p>
-              </div>
+              {!tgStatus?.telegram?.hasBot ? (
+                <Alert className="border-yellow-500/40 bg-yellow-500/10">
+                  <AlertDescription className="text-yellow-100">
+                    Telegram bot is not configured. Set TELEGRAM_BOT_TOKEN and TELEGRAM_BOT_USERNAME on the server.
+                  </AlertDescription>
+                </Alert>
+              ) : (
+                <div className="space-y-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge variant="outline">
+                      Bot: @{tgStatus.telegram.botUsername}
+                    </Badge>
+                    <Badge variant="outline">
+                      {tgStatus.telegram.chatIdLinked ? "Linked" : "Not linked"}
+                    </Badge>
+                    {tgStatus.telegram.telegramUsername ? (
+                      <Badge variant="outline">@{tgStatus.telegram.telegramUsername}</Badge>
+                    ) : null}
+                  </div>
 
-              <div className="space-y-2">
-                <label className="block text-sm font-medium">OTP code</label>
-                <div className="flex gap-2">
-                  <input
-                    value={waOtp}
-                    onChange={(e) => setWaOtp(e.target.value)}
-                    placeholder="6-digit code"
-                    className="flex-1 px-3 py-2 bg-background border border-border rounded-md"
-                  />
-                  <Button onClick={verifyOtp} disabled={waLoading || waOtp.trim().length < 6}>
-                    Verify
-                  </Button>
+                  <div className="flex flex-wrap gap-2">
+                    <Button variant="outline" onClick={() => void createTelegramLink()} disabled={tgLoading}>
+                      {tgLoading ? "Working…" : "Generate link"}
+                    </Button>
+
+                    {tgStartLink ? (
+                      <Button asChild variant="default">
+                        <Link href={tgStartLink} target="_blank" rel="noreferrer">
+                          Open Telegram
+                        </Link>
+                      </Button>
+                    ) : null}
+                  </div>
+
+                  <p className="text-xs text-muted-foreground">
+                    Click “Generate link”, then “Open Telegram” and press Start. This links your Telegram chat to your account.
+                  </p>
                 </div>
-              </div>
+              )}
 
               <div className="space-y-2">
                 <label className="block text-sm font-medium">Selected state</label>
@@ -500,7 +464,7 @@ export function SettingsPage() {
                     const value = e.target.value
                     preferencesStorage.save({ selectedState: value })
                     setPreferences(preferencesStorage.get())
-                    void saveWhatsAppSettings({ selectedState: value })
+                    void saveTelegramSettings({ selectedState: value })
                   }}
                   className="w-full px-3 py-2 bg-background border border-border rounded-md"
                 >
@@ -517,8 +481,8 @@ export function SettingsPage() {
                 <div className="space-y-2">
                   <label className="block text-sm font-medium">Threshold</label>
                   <select
-                    value={waThreshold}
-                    onChange={(e) => void saveWhatsAppSettings({ threshold: e.target.value })}
+                    value={tgThreshold}
+                    onChange={(e) => void saveTelegramSettings({ threshold: e.target.value })}
                     className="w-full px-3 py-2 bg-background border border-border rounded-md"
                   >
                     <option value="HIGH">High or Critical</option>
@@ -532,8 +496,8 @@ export function SettingsPage() {
                     type="number"
                     min={5}
                     max={1440}
-                    value={waCooldown}
-                    onChange={(e) => void saveWhatsAppSettings({ cooldownMinutes: Number(e.target.value) })}
+                    value={tgCooldown}
+                    onChange={(e) => void saveTelegramSettings({ cooldownMinutes: Number(e.target.value) })}
                     className="w-full px-3 py-2 bg-background border border-border rounded-md"
                   />
                 </div>
@@ -541,17 +505,15 @@ export function SettingsPage() {
 
               <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-background rounded border border-border">
                 <div>
-                  <div className="font-medium">Enable WhatsApp alerts</div>
-                  <div className="text-xs text-muted-foreground">
-                    Requires a verified phone number and opt-in.
-                  </div>
+                  <div className="font-medium">Enable Telegram alerts</div>
+                  <div className="text-xs text-muted-foreground">Requires linking your Telegram chat.</div>
                 </div>
                 <Button
-                  variant={waEnabled ? "default" : "outline"}
-                  onClick={() => void saveWhatsAppSettings({ whatsappEnabled: !waEnabled })}
-                  disabled={waLoading || !waStatus?.phoneVerified}
+                  variant={tgEnabled ? "default" : "outline"}
+                  onClick={() => void saveTelegramSettings({ telegramEnabled: !tgEnabled })}
+                  disabled={tgLoading || !tgStatus?.telegram?.chatIdLinked}
                 >
-                  {waEnabled ? "Enabled" : "Enable"}
+                  {tgEnabled ? "Enabled" : "Enable"}
                 </Button>
               </div>
             </>

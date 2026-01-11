@@ -3,8 +3,14 @@ import { getServerSession } from 'next-auth'
 
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { buildTelegramStartLink, telegramBotUsername } from '@/lib/telegram'
 
 export const runtime = 'nodejs'
+
+function generateCode(): string {
+  // Short, URL-safe code
+  return Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 10)
+}
 
 export async function GET() {
   const session = await getServerSession(authOptions)
@@ -14,30 +20,36 @@ export async function GET() {
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
-      phoneNumber: true,
-      phoneVerified: true,
-      whatsappOptIn: true,
+      telegramChatId: true,
+      telegramUsername: true,
+      telegramOptIn: true,
       alertSettings: true,
     },
   })
 
   if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 })
 
+  const botUsername = telegramBotUsername()
+  const hasBot = Boolean(botUsername)
+
   return NextResponse.json({
-    phoneNumber: user.phoneNumber,
-    phoneVerified: user.phoneVerified,
-    whatsappOptIn: user.whatsappOptIn,
+    telegram: {
+      hasBot,
+      botUsername: botUsername || null,
+      chatIdLinked: Boolean(user.telegramChatId),
+      telegramUsername: user.telegramUsername,
+      telegramOptIn: user.telegramOptIn,
+    },
     settings: user.alertSettings,
   })
 }
 
-type UpdateSettingsBody = {
+type CreateLinkCodeBody = {
   selectedState?: string
-  whatsappEnabled?: boolean
+  telegramEnabled?: boolean
   browserEnabled?: boolean
   threshold?: 'HIGH' | 'CRITICAL'
   cooldownMinutes?: number
-  whatsappOptIn?: boolean
 }
 
 export async function POST(req: Request) {
@@ -45,8 +57,9 @@ export async function POST(req: Request) {
   const userId = session?.user?.id
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const body = (await req.json().catch(() => ({}))) as UpdateSettingsBody
+  const body = (await req.json().catch(() => ({}))) as CreateLinkCodeBody
 
+  // Save alert settings updates (optional, same endpoint for convenience)
   const selectedState = (body.selectedState ?? '').toString().trim()
   const cooldownMinutes =
     typeof body.cooldownMinutes === 'number' && Number.isFinite(body.cooldownMinutes)
@@ -59,36 +72,43 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Invalid state.' }, { status: 400 })
   }
 
-  if (typeof body.whatsappOptIn === 'boolean') {
-    await prisma.user.update({
-      where: { id: userId },
-      data: {
-        whatsappOptIn: body.whatsappOptIn,
-        whatsappOptInAt: body.whatsappOptIn ? new Date() : null,
-      },
-    })
-  }
-
   const existing = await prisma.userAlertSettings.findUnique({ where: { userId } })
-
-  const updated = await prisma.userAlertSettings.upsert({
+  await prisma.userAlertSettings.upsert({
     where: { userId },
     create: {
       userId,
       selectedState: selectedState || existing?.selectedState || 'Uttar Pradesh',
-      whatsappEnabled: typeof body.whatsappEnabled === 'boolean' ? body.whatsappEnabled : false,
+      telegramEnabled: typeof body.telegramEnabled === 'boolean' ? body.telegramEnabled : false,
       browserEnabled: typeof body.browserEnabled === 'boolean' ? body.browserEnabled : true,
       threshold: threshold ?? 'HIGH',
       cooldownMinutes: cooldownMinutes ?? 60,
     },
     update: {
       ...(selectedState ? { selectedState } : {}),
-      ...(typeof body.whatsappEnabled === 'boolean' ? { whatsappEnabled: body.whatsappEnabled } : {}),
+      ...(typeof body.telegramEnabled === 'boolean' ? { telegramEnabled: body.telegramEnabled } : {}),
       ...(typeof body.browserEnabled === 'boolean' ? { browserEnabled: body.browserEnabled } : {}),
       ...(threshold ? { threshold } : {}),
       ...(typeof cooldownMinutes === 'number' ? { cooldownMinutes } : {}),
     },
   })
 
-  return NextResponse.json({ ok: true, settings: updated })
+  // Create a one-time link code
+  await prisma.telegramLinkCode.deleteMany({ where: { userId } })
+
+  const code = generateCode()
+  const expiresAt = new Date(Date.now() + 15 * 60 * 1000)
+
+  await prisma.telegramLinkCode.create({
+    data: { userId, code, expiresAt },
+  })
+
+  const startLink = buildTelegramStartLink(code)
+
+  return NextResponse.json({
+    ok: true,
+    code,
+    expiresAt,
+    startLink,
+    botUsername: telegramBotUsername() || null,
+  })
 }

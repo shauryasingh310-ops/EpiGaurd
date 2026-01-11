@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 
 import { prisma } from '@/lib/prisma'
 import { splitBullets } from '@/lib/otp'
-import { sendWhatsAppTemplateMessage } from '@/lib/whatsapp'
+import { telegramSendMessage } from '@/lib/telegram'
 
 export const runtime = 'nodejs'
 
@@ -99,14 +99,6 @@ export async function GET(req: Request) {
     )
   }
 
-  const alertTemplate = process.env.WHATSAPP_ALERT_TEMPLATE_NAME
-  if (!alertTemplate) {
-    return NextResponse.json(
-      { error: 'Missing WHATSAPP_ALERT_TEMPLATE_NAME (approved WhatsApp template required).' },
-      { status: 500 },
-    )
-  }
-
   const disease = await fetchDiseaseData(baseUrl)
   if (!disease) {
     return NextResponse.json(
@@ -116,13 +108,12 @@ export async function GET(req: Request) {
   }
 
   const settings = await prisma.userAlertSettings.findMany({
-    where: { whatsappEnabled: true },
+    where: { telegramEnabled: true },
     include: {
       user: {
         select: {
-          phoneNumber: true,
-          phoneVerified: true,
-          whatsappOptIn: true,
+          telegramChatId: true,
+          telegramOptIn: true,
         },
       },
     },
@@ -138,8 +129,8 @@ export async function GET(req: Request) {
   const now = Date.now()
 
   for (const row of settings) {
-    const phone = row.user.phoneNumber
-    if (!phone || !row.user.phoneVerified || !row.user.whatsappOptIn) {
+    const chatId = row.user.telegramChatId
+    if (!chatId || !row.user.telegramOptIn) {
       skipped++
       continue
     }
@@ -181,21 +172,22 @@ export async function GET(req: Request) {
 
     const link = `${baseUrl}/dashboard?state=${encodeURIComponent(state)}`
 
-    // Template variables expected (recommended):
-    // 1 risk level, 2 state, 3 risk percent, 4 primary threat, 5 action1, 6 action2, 7 action3, 8 link
-    await sendWhatsAppTemplateMessage({
-      to: phone,
-      templateName: alertTemplate,
-      bodyParameters: [
-        level,
-        state,
-        riskPct,
-        primaryThreat,
-        safeActions[0] ?? '',
-        safeActions[1] ?? '',
-        safeActions[2] ?? '',
-        link,
-      ],
+    const text =
+      `EpiGuard Alert\n` +
+      `Risk: ${level}\n` +
+      `State: ${state}\n` +
+      `Risk score: ${riskPct}%\n` +
+      `Primary threat: ${primaryThreat}\n\n` +
+      `Recommended actions:\n` +
+      `- ${safeActions[0] ?? ''}\n` +
+      `- ${safeActions[1] ?? ''}\n` +
+      `- ${safeActions[2] ?? ''}\n\n` +
+      `Details: ${link}`
+
+    await telegramSendMessage({
+      chatId,
+      text,
+      disableWebPagePreview: true,
     })
 
     await prisma.userAlertSettings.update({
