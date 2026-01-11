@@ -179,7 +179,7 @@ export async function GET(req: Request) {
           'Seek medical advice early if symptoms appear.',
         ]
 
-    const link = `${baseUrl}/dashboard?state=${encodeURIComponent(state)}`
+    const link = `https://epigaurd.vercel.app/`
 
     const text =
       `EpiGuard Alert\n` +
