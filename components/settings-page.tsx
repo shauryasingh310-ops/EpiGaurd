@@ -103,7 +103,7 @@ export function SettingsPage() {
         <CardContent className="space-y-4">
           <div>
             <label className="block text-sm font-medium mb-3" suppressHydrationWarning>
-              {t("settings.currentLanguage") || "Current Language"}
+              {t("Current Language") || "Current Language"}
             </label>
             <div className="flex items-start">
               <LanguageSwitcher />
