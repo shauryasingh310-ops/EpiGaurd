@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
+import { Prisma } from '@prisma/client'
 
 import { prisma } from '@/lib/prisma'
 
@@ -56,11 +57,37 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ ok: true, user })
   } catch (err) {
-    // Avoid leaking internals; provide more detail in dev.
-    const message = err instanceof Error ? err.message : 'Unknown error'
+    const errorId = `reg_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`
+
+    // Log full error server-side so you can inspect Vercel Function logs.
+    console.error(`[register] ${errorId}`, err)
+
+    // Handle common Prisma errors cleanly.
+    if (err instanceof Prisma.PrismaClientKnownRequestError) {
+      if (err.code === 'P2002') {
+        return NextResponse.json(
+          { error: 'An account with that email already exists.', errorId },
+          { status: 409 },
+        )
+      }
+    }
+
+    const message = err instanceof Error ? err.message : ''
+    const isMissingTables = /no such table|SQLITE_ERROR/i.test(message)
+    const isDbUrlMisconfigured = /Invalid DATABASE_URL|DATABASE_URL/i.test(message)
+
+    // Avoid leaking internals to the browser in production, but still provide a useful hint.
+    const hint = isMissingTables
+      ? 'Database tables are missing. Run Prisma migrations against the production database.'
+      : isDbUrlMisconfigured
+        ? 'Database configuration is missing or invalid in production.'
+        : undefined
+
     return NextResponse.json(
       {
         error: 'Registration failed.',
+        errorId,
+        ...(hint ? { hint } : {}),
         ...(process.env.NODE_ENV !== 'production' ? { details: message } : {}),
       },
       { status: 500 },
