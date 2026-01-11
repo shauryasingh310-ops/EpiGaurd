@@ -588,7 +588,7 @@ export default function Dashboard() {
                       {isFavorite && (
                         <span className="absolute top-2 right-2 flex items-center gap-1 bg-gradient-to-r from-blue-700 via-blue-800 to-purple-700 text-white text-xs font-semibold px-2 py-0.5 rounded-full shadow border border-purple-700 z-10">
                           <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor" className="inline-block mr-0.5"><path d="M10 15.27L16.18 19l-1.64-7.03L20 7.24l-7.19-.61L10 0 7.19 6.63 0 7.24l5.46 4.73L3.82 19z"/></svg>
-                          {t ? t('common.favorite') : 'Favorite'}
+                          Highlighted
                         </span>
                       )}
 
