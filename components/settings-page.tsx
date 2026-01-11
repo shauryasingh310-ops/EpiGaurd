@@ -110,7 +110,7 @@ export function SettingsPage() {
             </div>
           </div>
           <p className="text-xs text-muted-foreground" suppressHydrationWarning>
-            {t("settings.languageNote") || "Your language preference will be saved and applied automatically when you reopen the application."}
+            {t("Languages") || "Your language preference will be saved and applied automatically when you reopen the application."}
           </p>
         </CardContent>
       </Card>
