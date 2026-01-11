@@ -512,12 +512,48 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card className="bg-card border-border">
+        <Card className="bg-card border-border group relative">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
               <Droplet className="w-4 h-4" />
-              <span suppressHydrationWarning>{t("dashboard.waterRiskAlert")}</span>
+              <span
+                className="cursor-help outline-none"
+                tabIndex={0}
+                aria-describedby="water-risk-zones-tooltip"
+                suppressHydrationWarning
+              >
+                {t("dashboard.waterRiskAlert")}
+              </span>
             </CardTitle>
+
+            <div
+              id="water-risk-zones-tooltip"
+              role="tooltip"
+              className="pointer-events-none invisible absolute z-50 top-12 left-4 w-72 max-w-[calc(100vw-2rem)] rounded-lg border border-border bg-card/60 backdrop-blur-xl p-3 text-xs text-muted-foreground shadow-lg opacity-0 translate-y-1 scale-[0.98] transition-[opacity,transform] duration-150 ease-out will-change-transform group-hover:visible group-hover:opacity-100 group-hover:translate-y-0 group-hover:scale-100 group-focus-within:visible group-focus-within:opacity-100 group-focus-within:translate-y-0 group-focus-within:scale-100"
+            >
+              <div className="text-sm font-medium text-foreground mb-2" suppressHydrationWarning>
+                States
+              </div>
+              {(() => {
+                const names = riskData
+                  .filter((z) => z.environmentalFactors?.waterQuality === "Poor")
+                  .map((z) => (z.location || z.state || '').toString())
+                  .filter(Boolean)
+                  .sort((a, b) => a.localeCompare(b))
+
+                if (names.length === 0) {
+                  return <div suppressHydrationWarning>{t("system.none") ?? 'None'}</div>
+                }
+
+                return (
+                  <div className="space-y-1">
+                    {names.map((n) => (
+                      <div key={n} className="text-foreground/90">{n}</div>
+                    ))}
+                  </div>
+                )
+              })()}
+            </div>
           </CardHeader>
           <CardContent>
             <p className="text-3xl font-bold text-blue-400">
