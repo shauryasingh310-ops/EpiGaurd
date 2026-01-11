@@ -34,6 +34,19 @@ function requireEnv(name: string): string {
   return value
 }
 
+function isDryRun(): boolean {
+  return process.env.WHATSAPP_DRY_RUN === 'true'
+}
+
+function normalizeTemplateLanguage(value: string | undefined): string {
+  const raw = (value ?? '').trim()
+  if (!raw) return 'en_US'
+  // Some users mistakenly set multiple values like "en_US,hi".
+  // WhatsApp expects a single language code, so pick the first.
+  const first = raw.split(',')[0]?.trim()
+  return first || 'en_US'
+}
+
 export function normalizePhoneNumber(input: string, defaultCountryCode?: string): string {
   const trimmed = input.trim()
   if (!trimmed) return ''
@@ -61,10 +74,13 @@ export function normalizePhoneNumber(input: string, defaultCountryCode?: string)
 }
 
 export async function sendWhatsAppTemplateMessage(args: SendTemplateArgs): Promise<void> {
-  const token = requireEnv('WHATSAPP_TOKEN')
-  const phoneNumberId = requireEnv('WHATSAPP_PHONE_NUMBER_ID')
+  const dryRun = isDryRun()
+  const token = dryRun ? (process.env.WHATSAPP_TOKEN || '') : requireEnv('WHATSAPP_TOKEN')
+  const phoneNumberId = dryRun
+    ? (process.env.WHATSAPP_PHONE_NUMBER_ID || '')
+    : requireEnv('WHATSAPP_PHONE_NUMBER_ID')
 
-  const languageCode = args.languageCode || process.env.WHATSAPP_TEMPLATE_LANGUAGE || 'en_US'
+  const languageCode = args.languageCode || normalizeTemplateLanguage(process.env.WHATSAPP_TEMPLATE_LANGUAGE)
 
   const payload: WhatsAppTemplateMessage = {
     messaging_product: 'whatsapp',
@@ -80,6 +96,17 @@ export async function sendWhatsAppTemplateMessage(args: SendTemplateArgs): Promi
         },
       ],
     },
+  }
+
+  if (dryRun) {
+    // Helps verify that auth flows + DB writes work even before templates are approved.
+    console.log('[whatsapp] DRY_RUN enabled; not sending message', {
+      to: args.to,
+      templateName: args.templateName,
+      languageCode,
+      bodyParametersCount: args.bodyParameters.length,
+    })
+    return
   }
 
   const url = `https://graph.facebook.com/v20.0/${encodeURIComponent(phoneNumberId)}/messages`

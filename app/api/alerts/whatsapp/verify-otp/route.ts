@@ -12,9 +12,12 @@ type VerifyOtpBody = {
 }
 
 function requireOtpSecret(): string {
-  const s = process.env.OTP_SECRET
+  const s = process.env.OTP_SECRET ?? (process.env as Record<string, string | undefined>)['OTP_SECRET ']
   if (!s) {
-    throw new Error('Missing OTP_SECRET. Set OTP_SECRET in .env.local (server-side).')
+    throw new Error(
+      'Missing OTP_SECRET. Set OTP_SECRET in .env.local (server-side). ' +
+        'If you wrote `OTP_SECRET = ...` with a space before `=`, remove the space and restart the dev server.',
+    )
   }
   return s
 }
