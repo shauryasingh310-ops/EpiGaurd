@@ -14,6 +14,19 @@ import { notificationService } from "@/lib/notifications"
 import { ALL_STATES } from "@/lib/all-states"
 import { LanguageSwitcher } from "@/components/language-switcher"
 
+type ServerWhatsAppSettings = {
+  phoneNumber: string | null
+  phoneVerified: boolean
+  whatsappOptIn: boolean
+  settings: {
+    selectedState: string
+    whatsappEnabled: boolean
+    browserEnabled: boolean
+    threshold: "HIGH" | "CRITICAL"
+    cooldownMinutes: number
+  } | null
+}
+
 export function SettingsPage() {
   const { t } = useTranslation()
   const { data: session } = useSession()
@@ -21,11 +34,136 @@ export function SettingsPage() {
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>("default")
   const [saveSuccess, setSaveSuccess] = useState(false)
 
+  const [waStatus, setWaStatus] = useState<ServerWhatsAppSettings | null>(null)
+  const [waLoading, setWaLoading] = useState(false)
+  const [waError, setWaError] = useState<string | null>(null)
+  const [waPhone, setWaPhone] = useState("")
+  const [waOtp, setWaOtp] = useState("")
+
+  const selectedState = waStatus?.settings?.selectedState || preferences.selectedState || ""
+  const waEnabled = waStatus?.settings?.whatsappEnabled ?? false
+  const waThreshold = waStatus?.settings?.threshold ?? "HIGH"
+  const waCooldown = waStatus?.settings?.cooldownMinutes ?? 60
+
   useEffect(() => {
     if (typeof window !== "undefined" && "Notification" in window) {
       setNotificationPermission(Notification.permission)
     }
   }, [])
+
+  useEffect(() => {
+    let cancelled = false
+
+    const load = async () => {
+      if (!session?.user?.id) {
+        setWaStatus(null)
+        return
+      }
+      setWaLoading(true)
+      setWaError(null)
+      try {
+        const res = await fetch("/api/alerts/whatsapp/settings", { cache: "no-store" })
+        if (!res.ok) {
+          const payload = (await res.json().catch(() => null)) as any
+          throw new Error(payload?.error || `Failed to load WhatsApp settings (${res.status}).`)
+        }
+        const data = (await res.json()) as ServerWhatsAppSettings
+        if (cancelled) return
+        setWaStatus(data)
+        setWaPhone(data.phoneNumber || "")
+        if (data.settings?.selectedState) {
+          preferencesStorage.save({ selectedState: data.settings.selectedState })
+          setPreferences(preferencesStorage.get())
+        }
+      } catch (e) {
+        if (!cancelled) setWaError(e instanceof Error ? e.message : "Failed to load WhatsApp settings")
+      } finally {
+        if (!cancelled) setWaLoading(false)
+      }
+    }
+
+    void load()
+    return () => {
+      cancelled = true
+    }
+  }, [session?.user?.id])
+
+  const saveWhatsAppSettings = async (updates: Record<string, any>) => {
+    setWaLoading(true)
+    setWaError(null)
+    try {
+      const res = await fetch("/api/alerts/whatsapp/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updates),
+      })
+      const payload = (await res.json().catch(() => null)) as any
+      if (!res.ok) throw new Error(payload?.error || `Failed to save (${res.status}).`)
+
+      const refreshed = await fetch("/api/alerts/whatsapp/settings", { cache: "no-store" })
+      const data = (await refreshed.json()) as ServerWhatsAppSettings
+      setWaStatus(data)
+
+      if (typeof updates.selectedState === "string") {
+        preferencesStorage.save({ selectedState: updates.selectedState })
+        setPreferences(preferencesStorage.get())
+      }
+
+      setSaveSuccess(true)
+      setTimeout(() => setSaveSuccess(false), 2500)
+    } catch (e) {
+      setWaError(e instanceof Error ? e.message : "Failed to save WhatsApp settings")
+    } finally {
+      setWaLoading(false)
+    }
+  }
+
+  const requestOtp = async () => {
+    setWaLoading(true)
+    setWaError(null)
+    try {
+      const res = await fetch("/api/alerts/whatsapp/request-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phoneNumber: waPhone }),
+      })
+      const payload = (await res.json().catch(() => null)) as any
+      if (!res.ok) throw new Error(payload?.error || payload?.details || `Failed to send OTP (${res.status}).`)
+
+      setSaveSuccess(true)
+      setTimeout(() => setSaveSuccess(false), 2500)
+    } catch (e) {
+      setWaError(e instanceof Error ? e.message : "Failed to request OTP")
+    } finally {
+      setWaLoading(false)
+    }
+  }
+
+  const verifyOtp = async () => {
+    setWaLoading(true)
+    setWaError(null)
+    try {
+      const res = await fetch("/api/alerts/whatsapp/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: waOtp }),
+      })
+      const payload = (await res.json().catch(() => null)) as any
+      if (!res.ok) throw new Error(payload?.error || payload?.details || `Failed to verify (${res.status}).`)
+
+      const refreshed = await fetch("/api/alerts/whatsapp/settings", { cache: "no-store" })
+      const data = (await refreshed.json()) as ServerWhatsAppSettings
+      setWaStatus(data)
+      setWaOtp("")
+
+      setSaveSuccess(true)
+      setTimeout(() => setSaveSuccess(false), 2500)
+    } catch (e) {
+      setWaError(e instanceof Error ? e.message : "Failed to verify OTP")
+    } finally {
+      setWaLoading(false)
+    }
+  }
 
   const handleToggleNotification = async () => {
     if (notificationPermission === "default") {
@@ -292,6 +430,132 @@ export function SettingsPage() {
             Export your data as a backup or clear all stored information including reports, preferences, and
             historical data.
           </p>
+        </CardContent>
+      </Card>
+
+      {/* WhatsApp Alerts */}
+      <Card className="bg-card border-border">
+        <CardHeader>
+          <CardTitle>WhatsApp Alerts</CardTitle>
+          <CardDescription>
+            Get WhatsApp messages when your selected state enters High/Critical risk.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {!session ? (
+            <Alert>
+              <AlertDescription>
+                Sign in to enable WhatsApp alerts (phone numbers are stored server-side).
+              </AlertDescription>
+            </Alert>
+          ) : (
+            <>
+              {waError && (
+                <Alert className="border-red-500/40 bg-red-500/10">
+                  <AlertDescription className="text-red-200">{waError}</AlertDescription>
+                </Alert>
+              )}
+
+              <div className="space-y-2">
+                <label className="block text-sm font-medium">WhatsApp phone number</label>
+                <input
+                  value={waPhone}
+                  onChange={(e) => setWaPhone(e.target.value)}
+                  placeholder="+911234567890"
+                  className="w-full px-3 py-2 bg-background border border-border rounded-md"
+                />
+                <div className="flex flex-wrap gap-2">
+                  <Button variant="outline" onClick={requestOtp} disabled={waLoading || !waPhone}>
+                    {waLoading ? "Working…" : "Send OTP"}
+                  </Button>
+                  <Badge variant="outline">
+                    {waStatus?.phoneVerified ? "Verified" : "Not verified"}
+                  </Badge>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  You’ll receive an OTP on WhatsApp (requires approved Meta template).
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-sm font-medium">OTP code</label>
+                <div className="flex gap-2">
+                  <input
+                    value={waOtp}
+                    onChange={(e) => setWaOtp(e.target.value)}
+                    placeholder="6-digit code"
+                    className="flex-1 px-3 py-2 bg-background border border-border rounded-md"
+                  />
+                  <Button onClick={verifyOtp} disabled={waLoading || waOtp.trim().length < 6}>
+                    Verify
+                  </Button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-sm font-medium">Selected state</label>
+                <select
+                  value={selectedState}
+                  onChange={(e) => {
+                    const value = e.target.value
+                    preferencesStorage.save({ selectedState: value })
+                    setPreferences(preferencesStorage.get())
+                    void saveWhatsAppSettings({ selectedState: value })
+                  }}
+                  className="w-full px-3 py-2 bg-background border border-border rounded-md"
+                >
+                  <option value="">-- Select a state --</option>
+                  {ALL_STATES.map((state) => (
+                    <option key={state} value={state}>
+                      {state}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium">Threshold</label>
+                  <select
+                    value={waThreshold}
+                    onChange={(e) => void saveWhatsAppSettings({ threshold: e.target.value })}
+                    className="w-full px-3 py-2 bg-background border border-border rounded-md"
+                  >
+                    <option value="HIGH">High or Critical</option>
+                    <option value="CRITICAL">Critical only</option>
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium">Cooldown (minutes)</label>
+                  <input
+                    type="number"
+                    min={5}
+                    max={1440}
+                    value={waCooldown}
+                    onChange={(e) => void saveWhatsAppSettings({ cooldownMinutes: Number(e.target.value) })}
+                    className="w-full px-3 py-2 bg-background border border-border rounded-md"
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-background rounded border border-border">
+                <div>
+                  <div className="font-medium">Enable WhatsApp alerts</div>
+                  <div className="text-xs text-muted-foreground">
+                    Requires a verified phone number and opt-in.
+                  </div>
+                </div>
+                <Button
+                  variant={waEnabled ? "default" : "outline"}
+                  onClick={() => void saveWhatsAppSettings({ whatsappEnabled: !waEnabled })}
+                  disabled={waLoading || !waStatus?.phoneVerified}
+                >
+                  {waEnabled ? "Enabled" : "Enable"}
+                </Button>
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
     </div>

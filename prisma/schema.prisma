@@ -13,11 +13,54 @@ model User {
   image        String?
   emailVerified DateTime?
   passwordHash String?
+  phoneNumber  String?  @unique
+  phoneVerified Boolean @default(false)
+  whatsappOptIn Boolean @default(false)
+  whatsappOptInAt DateTime?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
   accounts Account[]
   sessions Session[]
+  alertSettings UserAlertSettings?
+  phoneVerifications PhoneVerification[]
+}
+
+enum RiskThreshold {
+  HIGH
+  CRITICAL
+}
+
+model UserAlertSettings {
+  id              String        @id @default(cuid())
+  userId          String        @unique
+  selectedState   String
+  browserEnabled  Boolean       @default(true)
+  whatsappEnabled Boolean       @default(false)
+  threshold       RiskThreshold @default(HIGH)
+  cooldownMinutes Int           @default(60)
+  lastAlertSentAt DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([selectedState])
+}
+
+model PhoneVerification {
+  id         String   @id @default(cuid())
+  userId     String
+  phoneNumber String
+  codeHash   String
+  expiresAt  DateTime
+  attempts   Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 model Account {

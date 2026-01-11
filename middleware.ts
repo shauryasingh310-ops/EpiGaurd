@@ -12,6 +12,7 @@ function withLanguageHeader(request: NextRequest, response: NextResponse): NextR
 function isPublicPath(pathname: string): boolean {
   if (pathname.startsWith('/api/auth')) return true
   if (pathname === '/sign-in' || pathname === '/sign-up') return true
+  if (pathname === '/privacy' || pathname === '/terms') return true
   if (pathname === '/favicon.ico' || pathname === '/manifest.json') return true
   return false
 }
