@@ -164,7 +164,7 @@ export async function GET(req: Request) {
       ? `Env: ${Math.round(env.temp)}°C, ${Math.round(env.humidity)}% humidity, PM2.5 ${Math.round(env.pm25)}, Water ${escapeHtml(env.waterQuality)}`
       : null
 
-    const link = `https://epigaurd.vercel.app/`
+    const link = 'https://epigaurd.vercel.app/'
 
     const text =
       `EpiGuard Daily Update\n` +
