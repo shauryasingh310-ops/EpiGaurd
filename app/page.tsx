@@ -1,9 +1,10 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { Activity, Droplet, Users, Ambulance, Brain, BarChart3, Menu, X, MapPin, PanelLeft, Settings } from "lucide-react"
 import { InteractiveMapModalButton } from "@/components/interactive-map-modal-button"
 import { useTranslation } from "react-i18next"
+import { signOut, useSession } from "next-auth/react"
 import Dashboard from "./dashboard"
 import { WaterQualityPage } from "@/components/water-quality-page"
 import { CommunityReportingPage } from "@/components/community-reporting-page"
@@ -12,20 +13,48 @@ import { MLPredictionsPage } from "@/components/ml-predictions-page"
 import AnalyticsInsightsPage from "@/components/analytics-insights-page"
 import { MyLocationPage } from "@/components/my-location-page"
 import { SettingsPage } from "@/components/settings-page"
+import { AIAssistantWidget } from "@/components/ai-assistant-panel"
 
 type PageType = "dashboard" | "mylocation" | "water" | "community" | "healthcare" | "ml" | "analytics" | "settings"
 
 export default function Home() {
   const { t, i18n } = useTranslation()
+  const { data: session, status } = useSession()
   const [currentPage, setCurrentPage] = useState<PageType>("dashboard")
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
-  const [mounted, setMounted] = useState(false)
+  const [profileOpen, setProfileOpen] = useState(false)
+  const profileRef = useRef<HTMLDivElement | null>(null)
 
-  // Ensure component is mounted before rendering translations to avoid hydration mismatch
   useEffect(() => {
-    setMounted(true)
-  }, [])
+    if (!profileOpen) return
+    const onPointerDown = (event: MouseEvent | TouchEvent) => {
+      const target = event.target
+      if (!(target instanceof Node)) return
+      if (profileRef.current?.contains(target)) return
+      setProfileOpen(false)
+    }
+    document.addEventListener('mousedown', onPointerDown)
+    document.addEventListener('touchstart', onPointerDown)
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown)
+      document.removeEventListener('touchstart', onPointerDown)
+    }
+  }, [profileOpen])
+
+  const userLabel = useMemo(() => {
+    const name = session?.user?.name?.trim()
+    if (name) return name
+    const email = session?.user?.email?.trim()
+    if (email) return email
+    return 'Profile'
+  }, [session?.user?.email, session?.user?.name])
+
+  const userInitial = useMemo(() => {
+    const source = session?.user?.name || session?.user?.email || ''
+    const c = source.trim().charAt(0).toUpperCase()
+    return c || 'U'
+  }, [session?.user?.email, session?.user?.name])
 
   const navItems = useMemo(() => [
     { id: "dashboard" as const, label: t("common.dashboard"), icon: Activity },
@@ -36,7 +65,7 @@ export default function Home() {
     { id: "ml" as const, label: t("common.mlPredictions"), icon: Brain },
     { id: "analytics" as const, label: t("common.analytics"), icon: BarChart3 },
     { id: "settings" as const, label: t("common.settings"), icon: Settings },
-  ], [t, i18n.language])
+  ], [t])
 
   const renderPage = () => {
     switch (currentPage) {
@@ -132,6 +161,54 @@ export default function Home() {
           </div>
           <div className="flex items-center gap-2">
             <InteractiveMapModalButton />
+
+            <div className="relative" ref={profileRef}>
+              {status === 'authenticated' ? (
+                <button
+                  type="button"
+                  aria-label={userLabel}
+                  onClick={() => setProfileOpen((v) => !v)}
+                  className="h-10 w-10 rounded-full border border-border bg-card/80 hover:bg-card transition-colors flex items-center justify-center overflow-hidden shadow-sm hover:shadow-md ring-1 ring-primary/25"
+                >
+                  {session?.user?.image ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={session.user.image} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    <span className="text-base font-bold text-foreground">{userInitial}</span>
+                  )}
+                </button>
+              ) : (
+                <a
+                  href="/sign-in"
+                  className="px-3 py-2 rounded-md border border-border bg-card/80 hover:bg-card transition-colors text-sm font-medium shadow-sm ring-1 ring-primary/25"
+                >
+                  Sign in
+                </a>
+              )}
+
+              {profileOpen && status === 'authenticated' && (
+                <div className="absolute right-0 mt-2 w-72 rounded-xl border border-border bg-card/[0.98] backdrop-blur-xl shadow-2xl overflow-hidden ring-1 ring-primary/20">
+                  <div className="px-4 py-3">
+                    <div className="text-base font-semibold truncate">{session?.user?.name || 'Account'}</div>
+                    {session?.user?.email && (
+                      <div className="text-sm text-muted-foreground truncate">{session.user.email}</div>
+                    )}
+                  </div>
+                  <div className="border-t border-border" />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setProfileOpen(false)
+                      void signOut({ callbackUrl: '/sign-in' })
+                    }}
+                    className="w-full text-left px-4 py-3 text-sm font-medium hover:bg-accent/10 transition-colors"
+                  >
+                    Sign out
+                  </button>
+                </div>
+              )}
+            </div>
+
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="md:hidden text-muted-foreground hover:text-foreground"
@@ -143,6 +220,8 @@ export default function Home() {
 
         <div key={currentPage} className="p-4 md:p-8 animate-in fade-in slide-in-from-bottom-4 duration-500">{renderPage()}</div>
       </main>
+
+      <AIAssistantWidget />
     </div>
   )
 }

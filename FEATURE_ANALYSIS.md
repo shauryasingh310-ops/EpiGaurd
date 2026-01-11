@@ -104,7 +104,7 @@ This document provides a comprehensive analysis of the **Disease Outbreak Dashbo
 - ✅ **My Location Page** - Location-specific risk analysis
 - ✅ **Water Quality Page** - Water source monitoring
 - ✅ **Healthcare Response Page** - Healthcare resource information
-- ✅ **ML Predictions Page** - AI-powered predictions (with OpenAI integration)
+- ✅ **ML Predictions Page** - AI-powered predictions (with OpenRouter integration)
 - ✅ **Analytics Insights Page** - Advanced analytics and visualizations
 - ✅ **Settings Page** - Comprehensive settings management
 
@@ -120,10 +120,10 @@ This document provides a comprehensive analysis of the **Disease Outbreak Dashbo
 - **Status**: Code structure ready, but using mock data by default
 
 ### 2. **Machine Learning Predictions**
-- 🟡 **OpenAI Integration** - Implemented but requires API key
+- 🟡 **OpenRouter Integration** - Implemented but requires API key
 - 🟡 **ML Model Infrastructure** - Mock predictions available
 - 🟡 **Risk Scoring Algorithm** - Rule-based logic implemented
-- **Status**: Can work with OpenAI API, but no real ML models (LSTM, etc.)
+- **Status**: Can work with OpenRouter API, but no real ML models (LSTM, etc.)
 
 ### 3. **Translation Completeness**
 - 🟡 **Tamil (ta.json)** - ✅ Complete translations
@@ -132,9 +132,10 @@ This document provides a comprehensive analysis of the **Disease Outbreak Dashbo
 - **Status**: Structure exists, but some languages may need translation review
 
 ### 4. **Map Integration**
-- 🟡 **State Coordinates** - Defined in my-location-page.tsx
-- 🟡 **Visual Map Display** - Not implemented (coordinates available)
-- **Status**: Data ready, but no interactive map component (Google Maps, Leaflet, etc.)
+- ✅ **Interactive Leaflet Map** - Implemented with markers, heatmap overlay, and state search
+- ✅ **Visual Map Display** - Working map UI (zoom/pan, popups, legend)
+- ✅ **Live Risk Data Integration** - Pulls from `GET /api/disease-data` with fallback
+- **Status**: Implemented and functional
 
 ---
 
@@ -249,7 +250,7 @@ This document provides a comprehensive analysis of the **Disease Outbreak Dashbo
 | **Real-Time Data** | 40% | 🟡 Partial (Mock Data) |
 | **Backend Infrastructure** | 10% | ❌ Not Started |
 | **Authentication** | 0% | ❌ Not Started |
-| **ML Infrastructure** | 30% | 🟡 Partial (OpenAI only) |
+| **ML Infrastructure** | 30% | 🟡 Partial (OpenRouter only) |
 | **Testing** | 0% | ❌ Not Started |
 | **DevOps** | 0% | ❌ Not Started |
 

@@ -80,7 +80,7 @@
     "reportSubmitted": "रिपोर्ट सफलतापूर्वक सबमिट हो गई!",
     "latestSubmissions": "समुदाय द्वारा नवीनतम सबमिशन",
     "confirmedByAuthorities": "स्वास्थ्य अधिकारियों द्वारा पुष्टि",
-    "healthSymptom": "स्वास्थ्य लक्षण",
+    
     "waterIssue": "जल समस्या",
     "sanitationIssue": "स्वच्छता समस्या",
     "anonymous": "गुमनाम",
@@ -231,6 +231,17 @@
   "mlPredictions": {
     "title": "ML पूर्वानुमान और जोखिम स्कोर",
     "subtitle": "लाइव ML और पर्यावरणीय डेटा आधारित",
+    "analysisTitle": "AI Analysis",
+    "analysisDescription": "Get actionable prevention guidance for a selected state.",
+    "stateLabel": "State",
+    "statePlaceholder": "Select a state",
+    "promptLabel": "Prompt (optional)",
+    "promptPlaceholder": "Ask for specific guidance (e.g., water safety, hospital prep, outreach)...",
+    "useSuggestedPrompt": "Use suggested prompt",
+    "analyzeButton": "Analyze",
+    "analyzingButton": "Analyzing...",
+    "analysisResultTitle": "Analysis",
+    "analysisErrorTitle": "Analysis failed",
     "riskScores": "जोखिम स्कोर",
     "featureImportance": "फीचर महत्व",
     "correlation": "सहसंबंध",
@@ -241,6 +252,21 @@
     "regionalRiskTrend": "क्षेत्रीय जोखिम प्रवृत्ति",
     "averageRegionalRisk": "औसत क्षेत्रीय जोखिम",
     "whichFactorsInfluence": "प्रभाव डालने वाले कारक"
+  },
+  "assistant": {
+    "title": "AI Assistant",
+    "open": "Open assistant",
+    "close": "Close assistant",
+    "transcriptLabel": "Assistant chat transcript",
+    "empty": "Ask about outbreak risk, prevention steps, or how to use the dashboard.",
+    "inputLabel": "Message",
+    "inputPlaceholder": "Type a message...",
+    "send": "Send",
+    "errors": {
+      "generic": "Something went wrong.",
+      "network": "Network error. Please try again.",
+      "noResponse": "No response returned."
+    }
   },
   "myLocation": {
     "title": "मेरा स्थान स्वास्थ्य डैशबोर्ड",

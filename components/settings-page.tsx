@@ -1,7 +1,9 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import Link from "next/link"
 import { useTranslation } from "react-i18next"
+import { signOut, useSession } from "next-auth/react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -14,6 +16,7 @@ import { LanguageSwitcher } from "@/components/language-switcher"
 
 export function SettingsPage() {
   const { t } = useTranslation()
+  const { data: session } = useSession()
   const [preferences, setPreferences] = useState<UserPreferences>(preferencesStorage.get())
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>("default")
   const [saveSuccess, setSaveSuccess] = useState(false)
@@ -83,11 +86,32 @@ export function SettingsPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold text-primary flex items-center gap-2">
-          <Settings className="w-8 h-8" />
-          {t("settings.title")}
-        </h1>
-        <p className="text-muted-foreground mt-2">{t("settings.subtitle")}</p>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-primary flex items-center gap-2">
+              <Settings className="w-8 h-8" />
+              {t("settings.title")}
+            </h1>
+            <p className="text-muted-foreground mt-2">{t("settings.subtitle")}</p>
+            {session?.user?.email && (
+              <p className="text-xs text-muted-foreground mt-1">Signed in as {session.user.email}</p>
+            )}
+          </div>
+
+          {session ? (
+            <Button
+              variant="outline"
+              onClick={() => signOut({ callbackUrl: "/sign-in" })}
+              className="shrink-0"
+            >
+              Sign out
+            </Button>
+          ) : (
+            <Button asChild variant="outline" className="shrink-0">
+              <Link href="/sign-in">Sign in</Link>
+            </Button>
+          )}
+        </div>
       </div>
 
       {saveSuccess && (

@@ -192,27 +192,19 @@ interface SearchBoxProps {
 }
 function SearchBox({ states, onSelect }: SearchBoxProps): ReactElement {
   const [query, setQuery] = useState<string>('');
-  const [results, setResults] = useState<StateRisk[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const results = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return [];
+    return states.filter((s) => s.name.toLowerCase().includes(q));
+  }, [query, states]);
 
   const selectState = (state: StateRisk) => {
     onSelect(state);
     setQuery('');
-    setResults([]);
     inputRef.current?.blur();
   };
-
-  useEffect(() => {
-    if (!query) {
-      setResults([]);
-      return;
-    }
-    setResults(
-      states.filter((s) =>
-        s.name.toLowerCase().includes(query.toLowerCase())
-      )
-    );
-  }, [query, states]);
 
   return (
     <div className="absolute top-6 left-[30%] z-[1001] w-[min(360px,calc(100vw-48px))] -translate-x-1/2">
@@ -228,7 +220,6 @@ function SearchBox({ states, onSelect }: SearchBoxProps): ReactElement {
           onKeyDown={(e) => {
           if (e.key === 'Escape') {
             setQuery('');
-            setResults([]);
             inputRef.current?.blur();
             return;
           }

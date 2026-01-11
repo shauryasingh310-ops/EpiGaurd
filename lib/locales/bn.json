@@ -80,7 +80,7 @@
     "reportSubmitted": "রিপোর্ট সফলভাবে জমা হয়েছে!",
     "latestSubmissions": "কমিউনিটির সর্বশেষ জমা",
     "confirmedByAuthorities": "স্বাস্থ্য কর্তৃপক্ষ দ্বারা নিশ্চিত",
-    "healthSymptom": "স্বাস্থ্য লক্ষণ",
+    
     "waterIssue": "জল সমস্যা",
     "sanitationIssue": "স্বচ্ছতা সমস্যা",
     "anonymous": "অজ্ঞাত",
@@ -234,6 +234,17 @@
     "riskScores": "ঝুঁকি স্কোর",
     "featureImportance": "ফিচারের গুরুত্ব",
     "correlation": "সম্পর্ক",
+    "analysisTitle": "AI Analysis",
+    "analysisDescription": "Get actionable prevention guidance for a selected state.",
+    "stateLabel": "State",
+    "statePlaceholder": "Select a state",
+    "promptLabel": "Prompt (optional)",
+    "promptPlaceholder": "Ask for specific guidance (e.g., water safety, hospital prep, outreach)...",
+    "useSuggestedPrompt": "Use suggested prompt",
+    "analyzeButton": "Analyze",
+    "analyzingButton": "Analyzing...",
+    "analysisResultTitle": "Analysis",
+    "analysisErrorTitle": "Analysis failed",
     "regionalRiskAssessment": "আঞ্চলিক ঝুঁকি",
     "currentRiskScores": "বর্তমান ঝুঁকি স্কোর",
     "rainfallVsCases": "বৃষ্টিপাত বনাম রোগের কেস",
@@ -241,6 +252,21 @@
     "regionalRiskTrend": "আঞ্চলিক ঝুঁকির প্রবণতা",
     "averageRegionalRisk": "গড় আঞ্চলিক ঝুঁকি",
     "whichFactorsInfluence": "কোন উপাদানগুলো প্রভাব ফেলে"
+  },
+  "assistant": {
+    "title": "AI Assistant",
+    "open": "Open assistant",
+    "close": "Close assistant",
+    "transcriptLabel": "Assistant chat transcript",
+    "empty": "Ask about outbreak risk, prevention steps, or how to use the dashboard.",
+    "inputLabel": "Message",
+    "inputPlaceholder": "Type a message...",
+    "send": "Send",
+    "errors": {
+      "generic": "Something went wrong.",
+      "network": "Network error. Please try again.",
+      "noResponse": "No response returned."
+    }
   },
   "myLocation": {
     "title": "আমার অবস্থান স্বাস্থ্য ড্যাশবোর্ড",

@@ -1,7 +1,6 @@
 "use client"
 import { useState, useEffect } from "react"
 import { useTranslation } from "react-i18next"
-import { analyzeWithOpenAI, fetchWeatherData, fetchWaterData, fetchPollutionData } from "../lib/api-client"
 import { ALL_STATES } from "@/lib/all-states"
 import {
   MOCK_DISEASE_DATA,
@@ -13,7 +12,9 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
-import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import {
   ScatterChart,
   Scatter,
@@ -55,61 +56,53 @@ interface FeatureImportance {
 
 export function MLPredictionsPage() {
   const { t } = useTranslation()
-  // --- OpenAI Real-Time Analysis State ---
-  const [openAIResult, setOpenAIResult] = useState<string>("");
-  const [openAILoading, setOpenAILoading] = useState(false);
-  const [openAIError, setOpenAIError] = useState<string>("");
-  const [openAIPrompt, setOpenAIPrompt] = useState<string>("");
+  // --- Real-Time AI Analysis State ---
+  const [aiResult, setAIResult] = useState<string>("");
+  const [aiLoading, setAILoading] = useState(false);
+  const [aiError, setAIError] = useState<string>("");
+  const [selectedState, setSelectedState] = useState<string>("");
 
-  // You may want to store the API key securely, or prompt the user for it if not present
-  const OPENAI_API_KEY = process.env.NEXT_PUBLIC_OPENAI_API_KEY || "sk-proj-..."; // Replace with your actual key or use env
-
-  // Example: Generate a prompt from current riskScores and featureImportance
-  function generateDefaultPrompt() {
-    const topRisk: RiskScoring = riskScores.length > 0
-      ? riskScores.slice().sort((a, b) => b.current_risk - a.current_risk)[0]
-      : {
-          region: "Unknown",
-          disease: "Unknown",
-          baseline_risk: 0.5,
-          current_risk: 0.5,
-          trend: "stable",
-          days_to_peak: 7,
-          confidence: 0.8,
-        };
-    const topFeature = featureImportance.length > 0 ? featureImportance.sort((a, b) => b.importance - a.importance)[0] : { feature: "Rainfall", importance: 0.28 };
-    return `Given the highest current risk is ${topRisk.disease} in ${topRisk.region} (${(topRisk.current_risk*100).toFixed(1)}%), and the most important feature is ${topFeature.feature} (${(topFeature.importance*100).toFixed(0)}%), provide actionable insights for outbreak prevention.`;
+  function getTopRiskForState(stateName: string): RiskScoring | null {
+    const candidates = riskScores.filter((r) => r.region === stateName);
+    if (candidates.length === 0) return null;
+    return candidates.slice().sort((a, b) => b.current_risk - a.current_risk)[0];
   }
 
-  async function handleOpenAIAnalyze() {
-    setOpenAILoading(true);
-    setOpenAIError("");
+  async function handleAnalyze() {
+    setAILoading(true);
+    setAIError("");
+    setAIResult("");
     try {
-      // Use the top risk region for real data
-      const topRisk = riskScores.sort((a, b) => b.current_risk - a.current_risk)[0];
-      const city = topRisk.region;
-      // Fetch real data
-      const [weather, pollution, water] = await Promise.all([
-        fetchWeatherData(city),
-        fetchPollutionData(city),
-        fetchWaterData()
-      ]);
-      // Find water data for the region
-      const waterForRegion = water?.find(w => w.state_name === city || w.district_name === city);
-      // Compose a real prompt
-      const prompt = openAIPrompt ||
-        `Analyze the following real-time data for ${city}:
-        - Weather: ${weather ? `${weather.temp}°C, ${weather.humidity}% humidity, ${weather.description}` : 'N/A'}
-        - Pollution: PM2.5=${pollution?.pm25 ?? 'N/A'}, PM10=${pollution?.pm10 ?? 'N/A'}
-        - Water Quality: ${waterForRegion ? `${waterForRegion.quality_parameter}=${waterForRegion.value}` : 'N/A'}
-        - Disease: ${topRisk.disease}, Current Risk: ${(topRisk.current_risk*100).toFixed(1)}%, Trend: ${topRisk.trend}
-        Provide actionable, concise outbreak prevention insights for this region.`;
-      const result = await analyzeWithOpenAI(prompt, OPENAI_API_KEY);
-      setOpenAIResult(result);
+      const region = selectedState || "";
+      const topRisk = region ? getTopRiskForState(region) : null;
+      const disease = topRisk?.disease || "Unknown";
+      const risk = typeof topRisk?.current_risk === 'number' ? topRisk.current_risk : undefined;
+      const trend = topRisk?.trend || "stable";
+
+      const res = await fetch('/api/predictions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          region,
+          disease,
+          risk,
+          trend,
+        }),
+      });
+
+      const data = await res.json().catch(() => null) as any;
+      if (!res.ok) {
+        const parts = [data?.error, data?.message, data?.retryAfter ? `Retry-After: ${data.retryAfter}` : null]
+          .filter(Boolean)
+          .map(String);
+        throw new Error(parts.length ? parts.join("\n") : `Request failed (${res.status})`);
+      }
+
+      setAIResult(data?.analysis || "No response.");
     } catch (err: any) {
-      setOpenAIError(err.message || "Failed to get response from OpenAI.");
+      setAIError(err.message || "Failed to get a response from the AI provider.");
     } finally {
-      setOpenAILoading(false);
+      setAILoading(false);
     }
   }
 
@@ -148,10 +141,16 @@ export function MLPredictionsPage() {
     // In static/mock mode, skip fetching and use centralized mock data
   }, []);
 
+  useEffect(() => {
+    if (selectedState) return;
+    const defaultState = riskScores[0]?.region || ALL_STATES[0] || "";
+    setSelectedState(defaultState);
+  }, [riskScores, selectedState]);
+
   const criticalPredictions = riskScores.filter((r) => r.current_risk > 0.7);
 
   if (loadingData) {
-    return <div className="flex h-screen items-center justify-center"><div className="text-lg text-muted-foreground">Loading real-time data from OpenAI and live APIs...</div></div>;
+    return <div className="flex h-screen items-center justify-center"><div className="text-lg text-muted-foreground">Loading real-time data from OpenRouter and live APIs...</div></div>;
   }
 
   // Main return block
@@ -166,6 +165,74 @@ export function MLPredictionsPage() {
           <b>{t("mlPredictions.subtitle")}</b>
         </p>
       </div>
+
+      <Card className="bg-card border-border">
+        <CardHeader>
+          <CardTitle>{t("mlPredictions.analysisTitle")}</CardTitle>
+          <CardDescription>{t("mlPredictions.analysisDescription")}</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="space-y-2">
+            <div className="text-sm font-medium">{t("mlPredictions.stateLabel")}</div>
+            <select
+              value={selectedState}
+              onChange={(e) => setSelectedState(e.target.value)}
+              className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              aria-label={t("mlPredictions.stateLabel")}
+            >
+              <option value="" disabled>
+                {t("mlPredictions.statePlaceholder")}
+              </option>
+              {ALL_STATES.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+
+            {selectedState ? (
+              <div className="text-sm text-muted-foreground">
+                {(() => {
+                  const top = getTopRiskForState(selectedState);
+                  if (!top) return null;
+                  return (
+                    <span>
+                      {top.disease} • {(top.current_risk * 100).toFixed(0)}% risk
+                    </span>
+                  );
+                })()}
+              </div>
+            ) : null}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button onClick={handleAnalyze} disabled={aiLoading || !selectedState}>
+              {aiLoading ? t("mlPredictions.analyzingButton") : t("mlPredictions.analyzeButton")}
+            </Button>
+          </div>
+
+          {aiError ? (
+            <Alert variant="destructive">
+              <AlertTriangle />
+              <AlertTitle>{t("mlPredictions.analysisErrorTitle")}</AlertTitle>
+              <AlertDescription>
+                <p className="whitespace-pre-wrap">{aiError}</p>
+              </AlertDescription>
+            </Alert>
+          ) : null}
+
+          {aiResult ? (
+            <Alert>
+              <TrendingUp />
+              <AlertTitle>{t("mlPredictions.analysisResultTitle")}</AlertTitle>
+              <AlertDescription>
+                <p className="whitespace-pre-wrap">{aiResult}</p>
+              </AlertDescription>
+            </Alert>
+          ) : null}
+        </CardContent>
+      </Card>
+
       <Tabs defaultValue="risk">
         <TabsList>
           <TabsTrigger value="risk">{t("mlPredictions.riskScores")}</TabsTrigger>

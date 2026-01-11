@@ -82,7 +82,7 @@
     "reportSubmitted": "அறிக்கை வெற்றிகரமாக சமர்ப்பிக்கப்பட்டது! இது சுகாதார அதிகாரிகளால் பரிசீலிக்கப்படும்.",
     "latestSubmissions": "சமூக உறுப்பினர்களின் சமீபத்திய சமர்ப்பிப்புகள்",
     "confirmedByAuthorities": "சுகாதார அதிகாரிகளால் உறுதிப்படுத்தப்பட்ட சமூக அறிக்கைகள்",
-    "healthSymptom": "சுகாதார அறிகுறி",
+    
     "waterIssue": "தண்ணீர் பிரச்சினை",
     "sanitationIssue": "சுகாதார வசதி பிரச்சினை",
     "anonymous": "அடையாளமற்றது",
@@ -95,16 +95,12 @@
     "filterByRegion": "பகுதியின்படி வடிகட்டு",
     "verifiedAndResolvedCases": "சரிபார்க்கப்பட்ட மற்றும் தீர்க்கப்பட்ட வழக்குகள்",
     "submitted": "சமர்ப்பிக்கப்பட்டது",
-    "reportIssue": "பிரச்சினையை அறிக்கையிடு",
     "helpUsTrack": "நோய் பரவல் மற்றும் தண்ணீர் தர பிரச்சினைகளை கண்காணிக்க எங்களுக்கு உதவுங்கள். தனியுரிமைக்காக அடையாளமற்ற அறிக்கையைத் தேர்வு செய்யவும்.",
     "reportSubmittedSuccessfully": "அறிக்கை வெற்றிகரமாக சமர்ப்பிக்கப்பட்டது! இது சுகாதார அதிகாரிகளால் பரிசீலிக்கப்படும்.",
-    "reportType": "அறிக்கை வகை",
     "healthSymptom": "சுகாதார அறிகுறி (காய்ச்சல், வயிற்றுப்போக்கு போன்றவை)",
     "waterContaminationIssue": "தண்ணீர் மாசுபாடு பிரச்சினை",
     "sanitationProblem": "சுகாதார குறைபாடு",
-    "regionVillage": "பகுதி / கிராமம்",
     "selectRegion": "பகுதியைத் தேர்ந்தெடுக்கவும்",
-    "description": "விளக்கம்",
     "describeIssueDetail": "பிரச்சினையை விரிவாக விளக்கவும் (குறைந்தது 10 எழுத்துகள்)...",
     "characters": "எழுத்துகள்",
     "submitAnonymously": "அடையாளமின்றி சமர்ப்பிக்கவும் (உங்கள் அடையாளம் பகிரப்படாது)",
@@ -243,7 +239,18 @@
 
   "mlPredictions": {
     "title": "எம்.எல். கணிப்பு மற்றும் அபாய மதிப்பீடு",
-    "subtitle": "கீழே உள்ள அனைத்து தரவுகளும் OpenAI மற்றும் நிகழ்நிலை சுற்றுச்சூழல் API களில் இருந்து உருவாக்கப்பட்டவை. போலி அல்லது நிலையான தரவு எதுவும் பயன்படுத்தப்படவில்லை.",
+    "subtitle": "கீழே உள்ள அனைத்து தரவுகளும் OpenRouter மற்றும் நிகழ்நிலை சுற்றுச்சூழல் API களில் இருந்து உருவாக்கப்பட்டவை. போலி அல்லது நிலையான தரவு எதுவும் பயன்படுத்தப்படவில்லை.",
+    "analysisTitle": "AI Analysis",
+    "analysisDescription": "Get actionable prevention guidance for a selected state.",
+    "stateLabel": "State",
+    "statePlaceholder": "Select a state",
+    "promptLabel": "Prompt (optional)",
+    "promptPlaceholder": "Ask for specific guidance (e.g., water safety, hospital prep, outreach)...",
+    "useSuggestedPrompt": "Use suggested prompt",
+    "analyzeButton": "Analyze",
+    "analyzingButton": "Analyzing...",
+    "analysisResultTitle": "Analysis",
+    "analysisErrorTitle": "Analysis failed",
     "riskScores": "அபாய மதிப்பெண்கள்",
     "featureImportance": "அம்ச முக்கியத்துவம்",
     "correlation": "இணைப்பு",
@@ -254,6 +261,22 @@
     "regionalRiskTrend": "மண்டல அபாய போக்கு",
     "averageRegionalRisk": "கடந்த 9 நாட்களில் சராசரி மண்டல அபாய மதிப்பெண்",
     "whichFactorsInfluence": "எந்த காரணிகள் பரவல் கணிப்புகளை அதிகம் பாதிக்கின்றன?"
+  },
+
+  "assistant": {
+    "title": "AI Assistant",
+    "open": "Open assistant",
+    "close": "Close assistant",
+    "transcriptLabel": "Assistant chat transcript",
+    "empty": "Ask about outbreak risk, prevention steps, or how to use the dashboard.",
+    "inputLabel": "Message",
+    "inputPlaceholder": "Type a message...",
+    "send": "Send",
+    "errors": {
+      "generic": "Something went wrong.",
+      "network": "Network error. Please try again.",
+      "noResponse": "No response returned."
+    }
   },
 
   "myLocation": {
@@ -337,7 +360,7 @@
     "export": "ஏற்றுமதி",
     "analyzingLiveFactors": "நிகழ்நிலை சுற்றுச்சூழல் காரணிகளை பகுப்பாய்வு செய்கிறது...",
     "unableToLoadData": "நிகழ்நிலை அபாய தரவை ஏற்ற முடியவில்லை.",
-    "checkApiKey": "உங்கள் OpenAI API விசை, இணைய இணைப்பு அல்லது பின்னர் முயற்சிக்கவும்.",
+    "checkApiKey": "உங்கள் OpenRouter API விசை, இணைய இணைப்பு அல்லது பின்னர் முயற்சிக்கவும்.",
     "risk": "அபாயம்",
     "low": "குறைந்த",
     "medium": "மிதமான", 

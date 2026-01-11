@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -32,12 +32,7 @@ export function CommunityReportingPage() {
   const [filterStatus, setFilterStatus] = useState<"all" | "pending" | "verified" | "resolved">("all")
   const [filterRegion, setFilterRegion] = useState<string>("all")
 
-  // Load reports from storage
-  useEffect(() => {
-    loadReports()
-  }, [])
-
-  const loadReports = () => {
+  const loadReports = useCallback(() => {
     const storedReports = reportStorage.getAll()
     // Merge with initial mock data if storage is empty
     if (storedReports.length === 0) {
@@ -84,7 +79,13 @@ export function CommunityReportingPage() {
     } else {
       setReports(storedReports)
     }
-  }
+  }, [])
+
+  // Load reports from storage
+  useEffect(() => {
+    const id = requestAnimationFrame(() => loadReports())
+    return () => cancelAnimationFrame(id)
+  }, [loadReports])
 
   const getReportTypeLabel = (type: string) => {
     const labels = {

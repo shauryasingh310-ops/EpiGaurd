@@ -1,10 +1,11 @@
-
 "use client"
+
 import { ALL_STATES } from "@/lib/all-states";
 
-import { useState, useEffect } from "react"
+import { useMemo, useState, useEffect } from "react"
 import { useTranslation } from "react-i18next"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -30,12 +31,31 @@ import { notificationService } from "@/lib/notifications"
 import { preferencesStorage, historicalStorage } from "@/lib/storage"
 import { getAriaLabel, getRole } from "@/lib/accessibility"
 
+function clamp01(value: number): number {
+  if (!Number.isFinite(value)) return 0
+  return Math.max(0, Math.min(1, value))
+}
+
+function to01(value: number, min: number, max: number): number {
+  if (!Number.isFinite(value) || max <= min) return 0
+  return clamp01((value - min) / (max - min))
+}
+
+function triangle01(value: number, min: number, peak: number, max: number): number {
+  if (!Number.isFinite(value)) return 0
+  if (value <= min || value >= max) return 0
+  if (value === peak) return 1
+  if (value < peak) return clamp01((value - min) / (peak - min))
+  return clamp01((max - value) / (max - peak))
+}
+
 export default function Dashboard() {
   const { t } = useTranslation()
   const [currentDate, setCurrentDate] = useState("")
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [riskData, setRiskData] = useState<any[]>([])
+  const [vectorState, setVectorState] = useState<string>("")
 
   const getAqiColorClass = (aqi: number | null): string => {
     if (typeof aqi !== 'number' || !isFinite(aqi)) return 'text-primary'
@@ -193,6 +213,94 @@ export default function Dashboard() {
     if (aqi === 2) return 'bg-yellow-500'
     return 'bg-red-500'
   }
+
+  const clamp01 = (value: number) => Math.max(0, Math.min(1, value))
+
+  const vectorRadarData = useMemo(() => {
+    if (!riskData || riskData.length === 0) {
+      return [
+        { subject: 'Heat (Temp)', A: 0, fullMark: 100 },
+        { subject: 'Humidity', A: 0, fullMark: 100 },
+        { subject: 'Rainfall', A: 0, fullMark: 100 },
+        { subject: 'Pollution (PM2.5)', A: 0, fullMark: 100 },
+        { subject: 'Water Contamination', A: 0, fullMark: 100 },
+      ]
+    }
+
+    const waterScore = (w: string): number => {
+      const v = (w || '').toLowerCase()
+      if (v === 'good') return 0
+      if (v === 'fair') return 40
+      if (v === 'poor') return 85
+      return 50
+    }
+
+    if (vectorState) {
+      const match = riskData.find((r) => r?.location === vectorState || r?.state === vectorState)
+      const env = match?.environmentalFactors
+      const temp = Number(env?.temp ?? NaN)
+      const humidity = Number(env?.humidity ?? NaN)
+      const pm25 = Number(env?.pm25 ?? NaN)
+      const rain = Boolean(env?.rain)
+      const waterQ = (env?.waterQuality ?? 'Unknown') as string
+
+      return [
+        { subject: 'Heat (Temp)', A: Math.round(to01(temp, 15, 42) * 100), fullMark: 100 },
+        { subject: 'Humidity', A: Math.round(to01(humidity, 30, 95) * 100), fullMark: 100 },
+        { subject: 'Rainfall', A: rain ? 100 : 0, fullMark: 100 },
+        { subject: 'Pollution (PM2.5)', A: Math.round(to01(pm25, 0, 150) * 100), fullMark: 100 },
+        { subject: 'Water Contamination', A: Math.round(clamp01(waterScore(waterQ) / 100) * 100), fullMark: 100 },
+      ]
+    }
+
+    const temps = riskData.map((r) => r.environmentalFactors?.temp).filter((v: any) => typeof v === 'number') as number[]
+    const hums = riskData.map((r) => r.environmentalFactors?.humidity).filter((v: any) => typeof v === 'number') as number[]
+    const pm25s = riskData.map((r) => r.environmentalFactors?.pm25).filter((v: any) => typeof v === 'number') as number[]
+    const rains = riskData.map((r) => r.environmentalFactors?.rain).filter((v: any) => typeof v === 'boolean') as boolean[]
+    const water = riskData.map((r) => r.environmentalFactors?.waterQuality).filter(Boolean) as string[]
+
+    const avg = (arr: number[]) => (arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0)
+
+    const avgTemp = avg(temps)
+    const avgHumidity = avg(hums)
+    const avgPm25 = avg(pm25s)
+    const rainPct = rains.length ? (rains.filter(Boolean).length / rains.length) : 0
+
+    const avgWater = water.length ? water.map(waterScore).reduce((a, b) => a + b, 0) / water.length : 0
+
+    return [
+      { subject: 'Heat (Temp)', A: Math.round(to01(avgTemp, 15, 42) * 100), fullMark: 100 },
+      { subject: 'Humidity', A: Math.round(to01(avgHumidity, 30, 95) * 100), fullMark: 100 },
+      { subject: 'Rainfall', A: Math.round(clamp01(rainPct) * 100), fullMark: 100 },
+      { subject: 'Pollution (PM2.5)', A: Math.round(to01(avgPm25, 0, 150) * 100), fullMark: 100 },
+      { subject: 'Water Contamination', A: Math.round(clamp01(avgWater / 100) * 100), fullMark: 100 },
+    ]
+  }, [riskData, vectorState])
+
+  const dengueBreedingData = useMemo(() => {
+    if (!riskData || riskData.length === 0) return []
+
+    const breedingIndex = (env: any) => {
+      // Suitability-style heuristic using live environmental factors:
+      // - Temp: best around ~28°C (falls off toward cooler/hotter extremes)
+      // - Humidity: higher is generally better for vector survival
+      // - Rain: standing water likelihood
+      const temp = Number(env?.temp ?? NaN)
+      const humidity = Number(env?.humidity ?? NaN)
+      const tempSuit = triangle01(temp, 18, 28, 38)
+      const humiditySuit = to01(humidity, 45, 90)
+      const rainSuit = env?.rain ? 1 : 0
+      return Math.round(clamp01(0.45 * humiditySuit + 0.35 * rainSuit + 0.20 * tempSuit) * 100)
+    }
+
+    return riskData
+      .map((r) => ({
+        location: r.location,
+        breedingIndex: breedingIndex(r.environmentalFactors),
+      }))
+      .sort((a, b) => b.breedingIndex - a.breedingIndex)
+      .slice(0, 12)
+  }, [riskData])
 
   if (loading) {
     return (
@@ -511,14 +619,37 @@ export default function Dashboard() {
                 <CardDescription className="text-wrap-balance" suppressHydrationWarning>{t("dashboard.averageRiskFactors")}</CardDescription>
               </CardHeader>
               <CardContent>
+                <div className="mb-3 flex flex-wrap items-center gap-2">
+                  <div className="text-sm font-medium" suppressHydrationWarning>
+                    {t("mlPredictions.stateLabel")}
+                  </div>
+                  <select
+                    value={vectorState}
+                    onChange={(e) => setVectorState(e.target.value)}
+                    className="h-9 w-full md:w-64 rounded-md border border-input bg-background px-3 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    aria-label={t("mlPredictions.stateLabel")}
+                  >
+                    <option value="">All (average)</option>
+                    {ALL_STATES.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
+                  </select>
+                  {vectorState ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="h-9"
+                      onClick={() => setVectorState("")}
+                      suppressHydrationWarning
+                    >
+                      {t("common.clear")}
+                    </Button>
+                  ) : null}
+                </div>
                 <ResponsiveContainer width="100%" height={300}>
-                  <RadarChart outerRadius="80%" data={[
-                    { subject: 'Heat (Temp)', A: 80, fullMark: 100 },
-                    { subject: 'Humidity', A: 65, fullMark: 100 },
-                    { subject: 'Rainfall', A: 40, fullMark: 100 },
-                    { subject: 'Pollution (PM2.5)', A: 90, fullMark: 100 },
-                    { subject: 'Water Contamination', A: 50, fullMark: 100 },
-                  ]}>
+                  <RadarChart outerRadius="80%" data={vectorRadarData}>
                     <PolarGrid stroke="rgba(255,255,255,0.1)" />
                     <PolarAngleAxis dataKey="subject" tick={{ fill: '#888888', fontSize: 12 }} />
                     <PolarRadiusAxis angle={30} domain={[0, 100]} stroke="rgba(255,255,255,0.1)" />
@@ -541,12 +672,24 @@ export default function Dashboard() {
                 <CardDescription className="text-wrap-balance" suppressHydrationWarning>{t("dashboard.humidityRainfall")}</CardDescription>
               </CardHeader>
               <CardContent>
+                <p className="mb-2 text-xs text-muted-foreground" suppressHydrationWarning>
+                  Click a bar to focus the radar on that state.
+                </p>
                 <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={riskData}> {/* All Cities */}
+                  <BarChart data={dengueBreedingData}> {/* Top states by breeding index */}
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
                     <XAxis dataKey="location" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
                     <Tooltip cursor={{ fill: 'rgba(255,255,255,0.05)' }} contentStyle={{ backgroundColor: "rgba(0,0,0,0.8)", borderColor: "rgba(255,255,255,0.1)" }} />
-                    <Bar name="Dengue Risk Score" dataKey="dengueRisk" fill="oklch(0.6 0.2 270)" radius={[4, 4, 0, 0]} />
+                    <Bar
+                      name="Breeding Index"
+                      dataKey="breedingIndex"
+                      fill="oklch(0.6 0.2 270)"
+                      radius={[4, 4, 0, 0]}
+                      onClick={(entry: any) => {
+                        const next = entry?.location
+                        if (typeof next === 'string' && next.trim()) setVectorState(next)
+                      }}
+                    />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>

@@ -25,20 +25,23 @@
 
 ---
 
-### 2. **Interactive Map Component** (0% Complete)
-**Current Status:** State coordinates defined, but no visual map
+### 2. **Interactive Map Component** (100% Complete)
+**Current Status:** Fully implemented interactive Leaflet map, integrated with live risk API
 
-**What's Missing:**
-- ✅ Integrate Google Maps or Leaflet.js
-- ✅ Display risk heatmap on map
+**Implemented:**
+- ✅ Leaflet map integration
+- ✅ Risk heatmap overlay
 - ✅ Clickable markers for each state/region
 - ✅ Zoom and pan functionality
 - ✅ Map legend for risk levels
-- ✅ Location search functionality
+- ✅ Location search / jump-to-state
+- ✅ Live data integration via `GET /api/disease-data` with fallback when unavailable
 
-**Files to Create/Update:** 
-- New component: `components/interactive-map.tsx`
-- Update: `components/my-location-page.tsx` - Add map visualization
+**Key Files:**
+- `components/interactive-map.tsx`
+- `components/interactive-map-modal-button.tsx`
+- `app/api/disease-data/route.ts`
+- `app/page.tsx`
 
 ---
 
@@ -57,7 +60,7 @@
 ---
 
 ### 4. **Machine Learning Models** (30% Complete)
-**Current Status:** OpenAI integration exists, but no real ML models
+**Current Status:** OpenRouter integration exists, but no real ML models
 
 **What's Missing:**
 - ✅ Implement LSTM models for time-series prediction
@@ -231,7 +234,7 @@
 
 ### Phase 2: Real Data Integration (Next)
 - 🟡 Connect to real APIs
-- 🟡 Add interactive map
+- ✅ Interactive map
 - 🟡 Improve ML predictions
 
 ### Phase 3: Backend & Auth

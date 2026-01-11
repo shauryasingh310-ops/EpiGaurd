@@ -82,7 +82,7 @@
     "reportSubmitted": "నివేదిక విజయవంతంగా సమర్పించబడింది! దీన్ని ఆరోగ్య అధికారులు సమీక్షిస్తారు.",
     "latestSubmissions": "సమాజ సభ్యుల తాజా సమర్పణలు",
     "confirmedByAuthorities": "ఆరోగ్య అధికారుల ద్వారా ధృవీకరించిన సమాజ నివేదికలు",
-    "healthSymptom": "ఆరోగ్య లక్షణం",
+    
     "waterIssue": "నీటి సమస్య",
     "sanitationIssue": "స్వచ్ఛత సమస్య",
     "anonymous": "గోప్యమైన",
@@ -95,16 +95,12 @@
     "filterByRegion": "ప్రాంతం ద్వారా ఫిల్టర్ చేయండి",
     "verifiedAndResolvedCases": "ధృవీకరించబడిన మరియు పరిష్కరించబడిన కేసులు",
     "submitted": "సమర్పించబడింది",
-    "reportIssue": "సమస్యను నివేదించండి",
     "helpUsTrack": "వ్యాధి వ్యాప్తి మరియు నీటి నాణ్యత సమస్యలను మానిటర్ చేయడానికి మాకు సహాయం చేయండి. గోప్యత కోసం గోప్య నివేదికను ఎంచుకోండి.",
     "reportSubmittedSuccessfully": "నివేదిక విజయవంతంగా సమర్పించబడింది! దీన్ని ఆరోగ్య అధికారులు సమీక్షిస్తారు.",
-    "reportType": "నివేదిక రకం",
     "healthSymptom": "ఆరోగ్య లక్షణం (జ్వరం, విరేచన మొదలైనవి)",
     "waterContaminationIssue": "నీటి మలినత సమస్య",
     "sanitationProblem": "స్వచ్ఛత సమస్య",
-    "regionVillage": "ప్రాంతం / గ్రామం",
     "selectRegion": "ప్రాంతాన్ని ఎంచుకోండి",
-    "description": "వివరణ",
     "describeIssueDetail": "సమస్యను పూర్తిగా వివరించండి (కనీసం 10 అక్షరాలు)...",
     "characters": "అక్షరాలు",
     "submitAnonymously": "గోప్యంగా సమర్పించండి (మీ ఐడెంటిటీ పంచబడదు)",
@@ -243,7 +239,18 @@
 
   "mlPredictions": {
     "title": "ఎం.ఎల్. అంచనాలు & ప్రమాద మూల్యాంకనం",
-    "subtitle": "క్రింద ఉన్న అన్ని డేటా OpenAI మరియు ప్రస్తుత పర్యావరణ APIల నుండి ఉత్పత్తి చేయబడింది. ఏ కూడా ఫేక్ లేదా స్థిరమైన డేటా ఉపయోగించబడలేదు.",
+    "subtitle": "క్రింద ఉన్న అన్ని డేటా OpenRouter మరియు ప్రస్తుత పర్యావరణ APIల నుండి ఉత్పత్తి చేయబడింది. ఏ కూడా ఫేక్ లేదా స్థిరమైన డేటా ఉపయోగించబడలేదు.",
+    "analysisTitle": "AI Analysis",
+    "analysisDescription": "Get actionable prevention guidance for a selected state.",
+    "stateLabel": "State",
+    "statePlaceholder": "Select a state",
+    "promptLabel": "Prompt (optional)",
+    "promptPlaceholder": "Ask for specific guidance (e.g., water safety, hospital prep, outreach)...",
+    "useSuggestedPrompt": "Use suggested prompt",
+    "analyzeButton": "Analyze",
+    "analyzingButton": "Analyzing...",
+    "analysisResultTitle": "Analysis",
+    "analysisErrorTitle": "Analysis failed",
     "riskScores": "ప్రమాద స్కోర్లు",
     "featureImportance": "ఫీచర్ ప్రాముఖ్యత",
     "correlation": "సంబంధం",
@@ -254,6 +261,22 @@
     "regionalRiskTrend": "ప్రాంతీయ ప్రమాద ధోరణి",
     "averageRegionalRisk": "గత 9 రోజుల్లో సగటు ప్రాంతీయ ప్రమాద స్కోరు",
     "whichFactorsInfluence": "ఏ కారణాలు వ్యాప్తి అంచనాలను ఎక్కువ ప్రభావితం చేస్తాయి?"
+  },
+
+  "assistant": {
+    "title": "AI Assistant",
+    "open": "Open assistant",
+    "close": "Close assistant",
+    "transcriptLabel": "Assistant chat transcript",
+    "empty": "Ask about outbreak risk, prevention steps, or how to use the dashboard.",
+    "inputLabel": "Message",
+    "inputPlaceholder": "Type a message...",
+    "send": "Send",
+    "errors": {
+      "generic": "Something went wrong.",
+      "network": "Network error. Please try again.",
+      "noResponse": "No response returned."
+    }
   },
 
   "myLocation": {
@@ -337,7 +360,7 @@
     "export": "ఎగుమతి",
     "analyzingLiveFactors": "ప్రస్తుత పర్యావరణ కారణాలను విశ్లేషణ చేస్తున్నారు...",
     "unableToLoadData": "ప్రస్తుత ప్రమాద డేటాను లోడ్ చేయలేము.",
-    "checkApiKey": "దయచేసి OpenAI API కీ, ఇంటర్నెట్ కనెక్షన్ తనిఖీ చేయండి లేదా మళ్లీ ప్రయత్నించండి.",
+    "checkApiKey": "దయచేసి OpenRouter API కీ, ఇంటర్నెట్ కనెక్షన్ తనిఖీ చేయండి లేదా మళ్లీ ప్రయత్నించండి.",
     "risk": "ప్రమాదం",
     "low": "కనిష్టం",
     "medium": "మధ్యస్థం",

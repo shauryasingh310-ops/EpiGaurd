@@ -1,26 +1,3 @@
-// --- OpenAI Integration for Real-Time Data Analysis ---
-export async function analyzeWithOpenAI(prompt: string, apiKey: string): Promise<string> {
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-            model: "gpt-4",
-            messages: [
-                { role: "system", content: "You are an expert in environmental and health data analysis. Return concise, actionable insights based on the provided data." },
-                { role: "user", content: prompt }
-            ],
-            max_tokens: 512
-        })
-    });
-    if (!response.ok) {
-        throw new Error(`OpenAI API error: ${response.status}`);
-    }
-    const data = await response.json();
-    return data.choices?.[0]?.message?.content || "No response from OpenAI.";
-}
 const DEFAULT_WEATHER_KEY = process.env.WEATHER_API_KEY;
 
 export interface WaterQualityData {

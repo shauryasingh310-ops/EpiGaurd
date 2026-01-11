@@ -16,7 +16,8 @@ export function InteractiveMapModalButton() {
   const [showInfo, setShowInfo] = useState(false)
 
   useEffect(() => {
-    setMounted(true)
+    const id = requestAnimationFrame(() => setMounted(true))
+    return () => cancelAnimationFrame(id)
   }, [])
 
   const handleOpen = () => {

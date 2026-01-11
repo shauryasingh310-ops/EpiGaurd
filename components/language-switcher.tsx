@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { Button } from "@/components/ui/button"
 import { Globe } from "lucide-react"
@@ -19,32 +19,22 @@ const languages = [
 export function LanguageSwitcher() {
   const { i18n } = useTranslation()
   const [mounted, setMounted] = useState(false)
-  const [currentLang, setCurrentLang] = useState("en") // Always start with 'en' to match server
   const [isOpen, setIsOpen] = useState(false)
 
   useEffect(() => {
-    // Only set language after component mounts (client-side only)
-    setMounted(true)
-    const savedLang = i18n.language || "en"
-    setCurrentLang(savedLang)
+    const id = requestAnimationFrame(() => setMounted(true))
+    return () => cancelAnimationFrame(id)
   }, [])
-
-  useEffect(() => {
-    // Update when i18n language changes
-    if (mounted && i18n.language) {
-      setCurrentLang(i18n.language)
-    }
-  }, [i18n.language, mounted])
 
   const handleLanguageChange = (langCode: string) => {
     i18n.changeLanguage(langCode)
     // Save to both localStorage and cookie for persistence
     preferencesStorage.save({ language: langCode })
     setCookie('language', langCode)
-    setCurrentLang(langCode)
     setIsOpen(false)
   }
 
+  const currentLang = mounted ? (i18n.language || "en") : "en"
   const currentLanguage = languages.find((lang) => lang.code === currentLang) || languages[0]
 
   return (

@@ -253,22 +253,13 @@ export async function GET() {
   const weatherKey = process.env.WEATHER_API_KEY
   const waterKey = process.env.DATA_GOV_IN_API_KEY
 
-  if (!weatherKey) {
-    return NextResponse.json(
-      {
-        error: 'Missing WEATHER_API_KEY. Add it to .env.local and restart the dev server.',
-      },
-      { status: 500 },
-    )
-  }
-
   // Fetch water dataset once (then match per state).
   const waterData = await fetchWaterData(waterKey ?? '').catch(() => [])
 
   const perState = await mapWithConcurrency(ALL_STATES, 6, async (state) => {
     const coords = STATE_COORDINATES[state]
     const [weather, pollution] = await Promise.all([
-      fetchWeatherData(state, weatherKey).catch(() => null),
+      fetchWeatherData(state, weatherKey ?? '').catch(() => null),
       fetchPollutionData(state, coords ? { lat: coords.lat, lng: coords.lng } : undefined).catch(() => null),
     ])
 
@@ -300,8 +291,9 @@ export async function GET() {
       updatedAt: new Date().toISOString(),
       states: perState,
       meta: {
-        weatherProvider: 'WeatherAPI.com',
-        pollutionProvider: 'WeatherAPI.com',
+        weatherProvider: weatherKey ? 'WeatherAPI.com' : 'missing/none',
+        weatherKeyPresent: Boolean(weatherKey),
+        pollutionProvider: weatherKey ? 'WeatherAPI.com' : 'missing/none',
         waterProvider: waterKey ? 'data.gov.in' : 'mock/fallback',
         waterKeyPresent: Boolean(waterKey),
         waterRecords: waterData.length,

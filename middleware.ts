@@ -1,12 +1,40 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { getToken } from 'next-auth/jwt'
 
-const middleware = (request) => {
+function withLanguageHeader(request: NextRequest, response: NextResponse): NextResponse {
   const langCookie = request.cookies.get('language')?.value
   const lang = langCookie || 'en'
-  const response = NextResponse.next()
   response.headers.set('x-language', lang)
   return response
+}
+
+function isPublicPath(pathname: string): boolean {
+  if (pathname.startsWith('/api/auth')) return true
+  if (pathname === '/sign-in' || pathname === '/sign-up') return true
+  if (pathname === '/favicon.ico' || pathname === '/manifest.json') return true
+  return false
+}
+
+const middleware = async (request: NextRequest) => {
+  const pathname = request.nextUrl.pathname
+  const next = withLanguageHeader(request, NextResponse.next())
+
+  if (isPublicPath(pathname)) return next
+
+  // If NEXTAUTH_SECRET is not set, don't hard-block the app (dev friendliness).
+  // Set NEXTAUTH_SECRET to enable protection.
+  const secret = process.env.NEXTAUTH_SECRET
+  if (!secret) return next
+
+  const token = await getToken({ req: request, secret })
+  if (token) return next
+
+  const signInUrl = request.nextUrl.clone()
+  signInUrl.pathname = '/sign-in'
+  signInUrl.searchParams.set('callbackUrl', request.nextUrl.pathname + request.nextUrl.search)
+
+  return withLanguageHeader(request, NextResponse.redirect(signInUrl))
 }
 
 export default middleware

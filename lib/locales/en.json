@@ -236,7 +236,18 @@
   },
   "mlPredictions": {
     "title": "ML Prediction & Risk Scoring",
-    "subtitle": "All data below is generated live from OpenAI and real environmental APIs. No mock or static data is used.",
+    "subtitle": "All data below is generated live from OpenRouter and real environmental APIs",
+    "analysisTitle": "AI Analysis",
+    "analysisDescription": "Get actionable prevention guidance for a selected state.",
+    "stateLabel": "State",
+    "statePlaceholder": "Select a state",
+    "promptLabel": "Prompt (optional)",
+    "promptPlaceholder": "Ask for specific guidance (e.g., water safety, hospital prep, outreach)...",
+    "useSuggestedPrompt": "Use suggested prompt",
+    "analyzeButton": "Analyze",
+    "analyzingButton": "Analyzing...",
+    "analysisResultTitle": "Analysis",
+    "analysisErrorTitle": "Analysis failed",
     "riskScores": "Risk Scores",
     "featureImportance": "Feature Importance",
     "correlation": "Correlation",
@@ -247,6 +258,21 @@
     "regionalRiskTrend": "Regional Risk Trend",
     "averageRegionalRisk": "Average regional risk score over past 9 days",
     "whichFactorsInfluence": "Which factors most influence outbreak predictions?"
+  },
+  "assistant": {
+    "title": "AI Assistant",
+    "open": "Open assistant",
+    "close": "Close assistant",
+    "transcriptLabel": "Assistant chat transcript",
+    "empty": "Ask about outbreak risk, prevention steps, or how to use the dashboard.",
+    "inputLabel": "Message",
+    "inputPlaceholder": "Type a message...",
+    "send": "Send",
+    "errors": {
+      "generic": "Something went wrong.",
+      "network": "Network error. Please try again.",
+      "noResponse": "No response returned."
+    }
   },
   "myLocation": {
     "title": "My Location Health Dashboard",
@@ -327,7 +353,7 @@
     "export": "Export",
     "analyzingLiveFactors": "Analyzing Live Environmental Factors...",
     "unableToLoadData": "Unable to load live risk data.",
-    "checkApiKey": "Please check your OpenAI API key, network connection, or try again later.",
+    "checkApiKey": "Please check your OpenRouter API key, network connection, or try again later.",
     "risk": "Risk",
     "low": "Low",
     "medium": "Medium",

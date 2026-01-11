@@ -16,19 +16,25 @@ export function HistoricalTrends({ state, days = 30 }: HistoricalTrendsProps) {
   const [trend, setTrend] = useState<"up" | "down" | "stable">("stable")
 
   useEffect(() => {
-    if (state) {
-      const data = historicalStorage.getTrend(state, days)
-      setTrendData(data)
+    let cancelled = false
+    const id = requestAnimationFrame(() => {
+      if (cancelled) return
 
-      if (data.length >= 2) {
-        const first = data[0].riskScore
-        const last = data[data.length - 1].riskScore
-        const diff = last - first
-        if (diff > 5) setTrend("up")
-        else if (diff < -5) setTrend("down")
-        else setTrend("stable")
+      if (state) {
+        const data = historicalStorage.getTrend(state, days)
+        setTrendData(data)
+
+        if (data.length >= 2) {
+          const first = data[0].riskScore
+          const last = data[data.length - 1].riskScore
+          const diff = last - first
+          if (diff > 5) setTrend("up")
+          else if (diff < -5) setTrend("down")
+          else setTrend("stable")
+        }
+        return
       }
-    } else {
+
       const all = historicalStorage.getAll()
       const recent = all
         .filter((d) => {
@@ -63,6 +69,11 @@ export function HistoricalTrends({ state, days = 30 }: HistoricalTrendsProps) {
       }))
 
       setTrendData(averaged)
+    })
+
+    return () => {
+      cancelled = true
+      cancelAnimationFrame(id)
     }
   }, [state, days])
 
