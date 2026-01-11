@@ -46,11 +46,8 @@ export async function GET() {
 
 type CreateLinkCodeBody = {
   selectedState?: string
-  telegramEnabled?: boolean
   browserEnabled?: boolean
   dailyDigestEnabled?: boolean
-  threshold?: 'HIGH' | 'CRITICAL'
-  cooldownMinutes?: number
 }
 
 export async function POST(req: Request) {
@@ -62,12 +59,6 @@ export async function POST(req: Request) {
 
   // Save alert settings updates (optional, same endpoint for convenience)
   const selectedState = (body.selectedState ?? '').toString().trim()
-  const cooldownMinutes =
-    typeof body.cooldownMinutes === 'number' && Number.isFinite(body.cooldownMinutes)
-      ? Math.max(5, Math.min(24 * 60, Math.round(body.cooldownMinutes)))
-      : undefined
-
-  const threshold = body.threshold === 'CRITICAL' ? 'CRITICAL' : body.threshold === 'HIGH' ? 'HIGH' : undefined
 
   if (selectedState && selectedState.length > 80) {
     return NextResponse.json({ error: 'Invalid state.' }, { status: 400 })
@@ -79,19 +70,13 @@ export async function POST(req: Request) {
     create: {
       userId,
       selectedState: selectedState || existing?.selectedState || '',
-      telegramEnabled: typeof body.telegramEnabled === 'boolean' ? body.telegramEnabled : false,
       browserEnabled: typeof body.browserEnabled === 'boolean' ? body.browserEnabled : true,
       dailyDigestEnabled: typeof body.dailyDigestEnabled === 'boolean' ? body.dailyDigestEnabled : true,
-      threshold: threshold ?? 'HIGH',
-      cooldownMinutes: cooldownMinutes ?? 60,
     },
     update: {
       ...(selectedState ? { selectedState } : {}),
-      ...(typeof body.telegramEnabled === 'boolean' ? { telegramEnabled: body.telegramEnabled } : {}),
       ...(typeof body.browserEnabled === 'boolean' ? { browserEnabled: body.browserEnabled } : {}),
       ...(typeof body.dailyDigestEnabled === 'boolean' ? { dailyDigestEnabled: body.dailyDigestEnabled } : {}),
-      ...(threshold ? { threshold } : {}),
-      ...(typeof cooldownMinutes === 'number' ? { cooldownMinutes } : {}),
     },
   })
 

@@ -94,6 +94,12 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
+  // Deprecated: threshold/cooldown based alerts were replaced with on-demand
+  // "send update when opening the bot".
+  if (process.env.ENABLE_THRESHOLD_ALERTS !== 'true') {
+    return NextResponse.json({ ok: true, disabled: true, sent: 0, skipped: 0 })
+  }
+
   const baseUrl = getBaseUrl()
   if (!baseUrl) {
     return NextResponse.json(

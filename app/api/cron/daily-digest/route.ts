@@ -31,6 +31,15 @@ function clamp01(value: number): number {
   return Math.max(0, Math.min(1, value))
 }
 
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
 function isSameUtcDay(a: Date, b: Date): boolean {
   return (
     a.getUTCFullYear() === b.getUTCFullYear() &&
@@ -100,7 +109,7 @@ export async function GET(req: Request) {
   }
 
   const settings = await prisma.userAlertSettings.findMany({
-    where: { telegramEnabled: true, dailyDigestEnabled: true },
+    where: { dailyDigestEnabled: true },
     include: {
       user: {
         select: {
@@ -152,26 +161,26 @@ export async function GET(req: Request) {
 
     const env = snapshot.environmentalFactors
     const envLine = env
-      ? `Env: ${Math.round(env.temp)}°C, ${Math.round(env.humidity)}% humidity, PM2.5 ${Math.round(env.pm25)}, Water ${env.waterQuality}`
+      ? `Env: ${Math.round(env.temp)}°C, ${Math.round(env.humidity)}% humidity, PM2.5 ${Math.round(env.pm25)}, Water ${escapeHtml(env.waterQuality)}`
       : null
 
     const link = `${baseUrl}/dashboard?state=${encodeURIComponent(state)}`
 
     const text =
       `EpiGuard Daily Update\n` +
-      `State: ${state}\n` +
-      `Risk: ${level} (${riskPct}%)\n` +
-      `Primary threat: ${primaryThreat}\n` +
+      `State: ${escapeHtml(state)}\n` +
+      `<b>Risk: ${escapeHtml(String(level))} (${escapeHtml(riskPct)}%)</b>\n` +
+      `Primary threat: ${escapeHtml(primaryThreat)}\n` +
       (envLine ? `${envLine}\n\n` : `\n`) +
       `Preventions:\n` +
-      `- ${preventions[0] ?? ''}\n` +
-      `- ${preventions[1] ?? ''}\n` +
-      `- ${preventions[2] ?? ''}\n` +
-      `- ${preventions[3] ?? ''}\n` +
-      `- ${preventions[4] ?? ''}\n\n` +
-      `Details: ${link}`
+      `- ${escapeHtml(preventions[0] ?? '')}\n` +
+      `- ${escapeHtml(preventions[1] ?? '')}\n` +
+      `- ${escapeHtml(preventions[2] ?? '')}\n` +
+      `- ${escapeHtml(preventions[3] ?? '')}\n` +
+      `- ${escapeHtml(preventions[4] ?? '')}\n\n` +
+      `Details: ${escapeHtml(link)}`
 
-    await telegramSendMessage({ chatId, text, disableWebPagePreview: true })
+    await telegramSendMessage({ chatId, text, parseMode: 'HTML', disableWebPagePreview: true })
 
     await prisma.userAlertSettings.update({
       where: { id: row.id },

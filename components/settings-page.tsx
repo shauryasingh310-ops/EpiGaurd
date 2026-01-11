@@ -7,175 +7,23 @@ import { signOut, useSession } from "next-auth/react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Settings, Bell, MapPin, Download, Trash2, CheckCircle2, Globe } from "lucide-react"
+import { Settings, Bell, MapPin, Download, Trash2, Globe } from "lucide-react"
 import { preferencesStorage, UserPreferences } from "@/lib/storage"
 import { notificationService } from "@/lib/notifications"
 import { ALL_STATES } from "@/lib/all-states"
 import { LanguageSwitcher } from "@/components/language-switcher"
-
-type ServerTelegramSettings = {
-  telegram: {
-    hasBot: boolean
-    botUsername: string | null
-    chatIdLinked: boolean
-    telegramUsername: string | null
-    telegramOptIn: boolean
-  }
-  settings: {
-    selectedState: string
-    telegramEnabled: boolean
-    browserEnabled: boolean
-    dailyDigestEnabled?: boolean
-    threshold: "HIGH" | "CRITICAL"
-    cooldownMinutes: number
-  } | null
-}
 
 export function SettingsPage() {
   const { t } = useTranslation()
   const { data: session } = useSession()
   const [preferences, setPreferences] = useState<UserPreferences>(preferencesStorage.get())
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>("default")
-  const [saveSuccess, setSaveSuccess] = useState(false)
-
-  const [tgStatus, setTgStatus] = useState<ServerTelegramSettings | null>(null)
-  const [tgLoading, setTgLoading] = useState(false)
-  const [tgError, setTgError] = useState<string | null>(null)
-  const [tgStartLink, setTgStartLink] = useState<string | null>(null)
-
-  const selectedState = tgStatus?.settings?.selectedState || preferences.selectedState || ""
-  const tgEnabled = tgStatus?.settings?.telegramEnabled ?? false
-  const tgThreshold = tgStatus?.settings?.threshold ?? "HIGH"
-  const tgCooldown = tgStatus?.settings?.cooldownMinutes ?? 60
-  const tgDailyDigestEnabled = tgStatus?.settings?.dailyDigestEnabled ?? true
 
   useEffect(() => {
     if (typeof window !== "undefined" && "Notification" in window) {
       setNotificationPermission(Notification.permission)
     }
   }, [])
-
-  useEffect(() => {
-    let cancelled = false
-
-    const load = async () => {
-      if (!session?.user?.id) {
-        setTgStatus(null)
-        setTgStartLink(null)
-        return
-      }
-      setTgLoading(true)
-      setTgError(null)
-      try {
-        const res = await fetch("/api/alerts/telegram/link-code", { cache: "no-store" })
-        if (!res.ok) {
-          const payload = (await res.json().catch(() => null)) as any
-          throw new Error(payload?.error || `Failed to load Telegram settings (${res.status}).`)
-        }
-        const data = (await res.json()) as ServerTelegramSettings
-        if (cancelled) return
-        setTgStatus(data)
-        if (data.settings?.selectedState) {
-          preferencesStorage.save({ selectedState: data.settings.selectedState })
-          setPreferences(preferencesStorage.get())
-        }
-      } catch (e) {
-        if (!cancelled) setTgError(e instanceof Error ? e.message : "Failed to load Telegram settings")
-      } finally {
-        if (!cancelled) setTgLoading(false)
-      }
-    }
-
-    void load()
-    return () => {
-      cancelled = true
-    }
-  }, [session?.user?.id])
-
-  const saveTelegramSettings = async (updates: Record<string, any>) => {
-    setTgLoading(true)
-    setTgError(null)
-    try {
-      const res = await fetch("/api/alerts/telegram/link-code", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updates),
-      })
-      const payload = (await res.json().catch(() => null)) as any
-      if (!res.ok) throw new Error(payload?.error || `Failed to save (${res.status}).`)
-
-      if (typeof payload?.startLink === "string" && payload.startLink) {
-        setTgStartLink(payload.startLink)
-      }
-
-      const refreshed = await fetch("/api/alerts/telegram/link-code", { cache: "no-store" })
-      const data = (await refreshed.json()) as ServerTelegramSettings
-      setTgStatus(data)
-
-      if (typeof updates.selectedState === "string") {
-        preferencesStorage.save({ selectedState: updates.selectedState })
-        setPreferences(preferencesStorage.get())
-      }
-
-      setSaveSuccess(true)
-      setTimeout(() => setSaveSuccess(false), 2500)
-    } catch (e) {
-      setTgError(e instanceof Error ? e.message : "Failed to save Telegram settings")
-    } finally {
-      setTgLoading(false)
-    }
-  }
-
-  const detectMyState = async () => {
-    setTgLoading(true)
-    setTgError(null)
-
-    if (typeof window === "undefined" || !navigator.geolocation) {
-      setTgLoading(false)
-      setTgError("Location is not supported in this browser.")
-      return
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        try {
-          const res = await fetch("/api/location/state", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-          })
-
-          const payload = (await res.json().catch(() => null)) as any
-          if (!res.ok || !payload?.ok || !payload?.state) {
-            throw new Error(payload?.error || `Failed to detect state (${res.status}).`)
-          }
-
-          const value = String(payload.state)
-          preferencesStorage.save({ selectedState: value })
-          setPreferences(preferencesStorage.get())
-          await saveTelegramSettings({ selectedState: value })
-        } catch (e) {
-          setTgError(e instanceof Error ? e.message : "Failed to detect state")
-        } finally {
-          setTgLoading(false)
-        }
-      },
-      (err) => {
-        setTgLoading(false)
-        if (err.code === err.PERMISSION_DENIED) {
-          setTgError("Location permission denied. Allow location access to auto-detect your state.")
-          return
-        }
-        setTgError("Unable to fetch your location. Try again.")
-      },
-      { enableHighAccuracy: true, timeout: 8000, maximumAge: 60_000 },
-    )
-  }
-
-  const createTelegramLink = async () => {
-    await saveTelegramSettings({})
-  }
 
   const handleToggleNotification = async () => {
     if (notificationPermission === "default") {
@@ -263,13 +111,6 @@ export function SettingsPage() {
           )}
         </div>
       </div>
-
-      {saveSuccess && (
-        <Alert className="border-green-500/50 bg-green-500/10">
-          <CheckCircle2 className="h-4 w-4 text-green-400" />
-          <AlertDescription className="text-green-300">{t("settings.settingsSaved")}</AlertDescription>
-        </Alert>
-      )}
 
       {/* Language Settings */}
       <Card className="bg-card border-border">
@@ -442,150 +283,6 @@ export function SettingsPage() {
             Export your data as a backup or clear all stored information including reports, preferences, and
             historical data.
           </p>
-        </CardContent>
-      </Card>
-
-      {/* Telegram Alerts */}
-      <Card className="bg-card border-border">
-        <CardHeader>
-          <CardTitle>Telegram Alerts</CardTitle>
-          <CardDescription>Get Telegram messages when your selected state enters High/Critical risk.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {!session ? (
-            <Alert>
-              <AlertDescription>Sign in to enable Telegram alerts.</AlertDescription>
-            </Alert>
-          ) : (
-            <>
-              {tgError && (
-                <Alert className="border-red-500/40 bg-red-500/10">
-                  <AlertDescription className="text-red-200">{tgError}</AlertDescription>
-                </Alert>
-              )}
-
-              {!tgStatus?.telegram?.hasBot ? (
-                <Alert className="border-yellow-500/40 bg-yellow-500/10">
-                  <AlertDescription className="text-yellow-100">
-                    Telegram bot is not configured. Set TELEGRAM_BOT_TOKEN and TELEGRAM_BOT_USERNAME on the server.
-                  </AlertDescription>
-                </Alert>
-              ) : (
-                <div className="space-y-2">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Badge variant="outline">
-                      Bot: @{tgStatus.telegram.botUsername}
-                    </Badge>
-                    <Badge variant="outline">
-                      {tgStatus.telegram.chatIdLinked ? "Linked" : "Not linked"}
-                    </Badge>
-                    {tgStatus.telegram.telegramUsername ? (
-                      <Badge variant="outline">@{tgStatus.telegram.telegramUsername}</Badge>
-                    ) : null}
-                  </div>
-
-                  <div className="flex flex-wrap gap-2">
-                    <Button variant="outline" onClick={() => void createTelegramLink()} disabled={tgLoading}>
-                      {tgLoading ? "Working…" : "Generate link"}
-                    </Button>
-
-                    {tgStartLink ? (
-                      <Button asChild variant="default">
-                        <Link href={tgStartLink} target="_blank" rel="noreferrer">
-                          Open Telegram
-                        </Link>
-                      </Button>
-                    ) : null}
-                  </div>
-
-                  <p className="text-xs text-muted-foreground">
-                    Click “Generate link”, then “Open Telegram” and press Start. This links your Telegram chat to your account.
-                  </p>
-                </div>
-              )}
-
-              <div className="space-y-2">
-                <label className="block text-sm font-medium">Selected state</label>
-                <div className="flex flex-wrap items-center gap-2">
-                  <Button variant="outline" onClick={() => void detectMyState()} disabled={tgLoading}>
-                    {tgLoading ? "Detecting…" : "Auto-detect my state"}
-                  </Button>
-                  <div className="text-xs text-muted-foreground">Or choose manually below.</div>
-                </div>
-                <select
-                  value={selectedState}
-                  onChange={(e) => {
-                    const value = e.target.value
-                    preferencesStorage.save({ selectedState: value })
-                    setPreferences(preferencesStorage.get())
-                    void saveTelegramSettings({ selectedState: value })
-                  }}
-                  className="w-full px-3 py-2 bg-background border border-border rounded-md"
-                >
-                  <option value="">-- Select a state --</option>
-                  {ALL_STATES.map((state) => (
-                    <option key={state} value={state}>
-                      {state}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-background rounded border border-border">
-                <div>
-                  <div className="font-medium">Daily digest</div>
-                  <div className="text-xs text-muted-foreground">Send one detailed update per day.</div>
-                </div>
-                <Button
-                  variant={tgDailyDigestEnabled ? "default" : "outline"}
-                  onClick={() => void saveTelegramSettings({ dailyDigestEnabled: !tgDailyDigestEnabled })}
-                  disabled={tgLoading}
-                >
-                  {tgDailyDigestEnabled ? "Enabled" : "Enable"}
-                </Button>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div className="space-y-2">
-                  <label className="block text-sm font-medium">Threshold</label>
-                  <select
-                    value={tgThreshold}
-                    onChange={(e) => void saveTelegramSettings({ threshold: e.target.value })}
-                    className="w-full px-3 py-2 bg-background border border-border rounded-md"
-                  >
-                    <option value="HIGH">High or Critical</option>
-                    <option value="CRITICAL">Critical only</option>
-                  </select>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="block text-sm font-medium">Cooldown (minutes)</label>
-                  <input
-                    type="number"
-                    min={5}
-                    max={1440}
-                    value={tgCooldown}
-                    onChange={(e) => void saveTelegramSettings({ cooldownMinutes: Number(e.target.value) })}
-                    className="w-full px-3 py-2 bg-background border border-border rounded-md"
-                  />
-                </div>
-              </div>
-
-              <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-background rounded border border-border">
-                <div>
-                  <div className="font-medium">Enable Telegram alerts</div>
-                  <div className="text-xs text-muted-foreground">Requires linking your Telegram chat.</div>
-                </div>
-                <Button
-                  variant={tgEnabled ? "default" : "outline"}
-                  onClick={() => void saveTelegramSettings({ telegramEnabled: !tgEnabled })}
-                  disabled={tgLoading || !tgStatus?.telegram?.chatIdLinked}
-                >
-                  {tgEnabled ? "Enabled" : "Enable"}
-                </Button>
-              </div>
-            </>
-          )}
         </CardContent>
       </Card>
     </div>

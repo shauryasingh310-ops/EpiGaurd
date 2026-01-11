@@ -24,7 +24,7 @@ export default function PrivacyPolicyPage() {
               <span className="font-medium">Account data</span>: email, name, and authentication identifiers (when you sign in).
             </li>
             <li>
-              <span className="font-medium">Alert settings</span>: selected state, thresholds, cooldowns, and (optional) Telegram chat link.
+              <span className="font-medium">Alert settings</span>: selected state, daily digest preference, and (optional) Telegram chat link.
             </li>
             <li>
               <span className="font-medium">Community reports</span>: reports you submit in the app (content and region).
@@ -45,8 +45,8 @@ export default function PrivacyPolicyPage() {
 
           <h2 className="text-base font-semibold">Telegram alerts</h2>
           <p>
-            If you enable Telegram alerts, we store your Telegram chat link details (e.g., chat ID and optional username) and alert
-            preferences to send risk notifications. You can disable Telegram alerts at any time from Settings.
+            If you link Telegram, we store your Telegram chat link details (e.g., chat ID and optional username) so we can send you a
+            state update when you open the bot from the app (and optionally a daily digest, if enabled).
           </p>
 
           <h2 className="text-base font-semibold">Data retention</h2>
