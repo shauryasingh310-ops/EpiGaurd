@@ -11,6 +11,7 @@
     "prisma:generate": "prisma generate --schema prisma/schema.prisma",
     "prisma:migrate": "prisma migrate dev",
     "prisma:migrate:deploy": "prisma migrate deploy --schema prisma/schema.prisma",
+    "turso:migrate": "node scripts/turso-migrate.mjs",
     "prisma:studio": "prisma studio",
     "weather:test": "node scripts/test-weather.js",
     "healthcare:import": "node scripts/import-healthcare-snapshot.mjs data/healthcare-snapshot.csv"

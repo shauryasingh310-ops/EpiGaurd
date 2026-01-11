@@ -39,11 +39,11 @@ function resolveDatabaseUrl(): string {
 }
 
 function createPrismaClient(databaseUrl: string): PrismaClient {
-  const libsqlUrl = normalizeLibsqlUrl(databaseUrl)
+  const { url: libsqlUrl, authToken } = normalizeLibsqlConfig(databaseUrl)
 
   // Prisma v7's libSQL adapter is a factory that creates and manages the libSQL client internally.
   // Passing a libSQL client instance here will lead to `config.url` being undefined.
-  const adapter = new PrismaLibSql({ url: libsqlUrl })
+  const adapter = new PrismaLibSql({ url: libsqlUrl, authToken })
   return new PrismaClient({ adapter })
 }
 
@@ -78,19 +78,42 @@ function loadDatabaseUrlFromDotenv() {
   }
 }
 
-function normalizeLibsqlUrl(url: string): string {
-  if (!url.startsWith('file:')) return url
+function normalizeLibsqlConfig(databaseUrl: string): { url: string; authToken?: string } {
+  // If auth token is provided separately, prefer that.
+  let authToken = process.env.TURSO_AUTH_TOKEN
+
+  // Extract authToken from URL query string if present.
+  // This keeps compatibility with DATABASE_URL values like:
+  // libsql://<db>.turso.io?authToken=...
+  if (databaseUrl.startsWith('libsql:') || databaseUrl.startsWith('https:') || databaseUrl.startsWith('http:')) {
+    try {
+      const parsed = new URL(databaseUrl)
+      const tokenFromUrl = parsed.searchParams.get('authToken')
+      if (!authToken && tokenFromUrl) authToken = tokenFromUrl
+
+      if (parsed.searchParams.has('authToken')) {
+        parsed.searchParams.delete('authToken')
+        databaseUrl = parsed.toString()
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  if (!databaseUrl.startsWith('file:')) {
+    return { url: databaseUrl, authToken: authToken || undefined }
+  }
 
   // If it's already a file URL (file:///...), keep it as-is.
-  if (url.startsWith('file://')) return url
+  if (databaseUrl.startsWith('file://')) return { url: databaseUrl }
 
   // Handle relative SQLite URLs like `file:./dev.db` by anchoring to the app root.
   const appRoot = findProjectRoot()
-  const rawPath = url.slice('file:'.length)
+  const rawPath = databaseUrl.slice('file:'.length)
   const normalizedRawPath = rawPath.replace(/^\/+/, '')
   const absolutePath = path.resolve(appRoot, normalizedRawPath)
 
-  return pathToFileURL(absolutePath).href
+  return { url: pathToFileURL(absolutePath).href }
 }
 
 function findProjectRoot(): string {
