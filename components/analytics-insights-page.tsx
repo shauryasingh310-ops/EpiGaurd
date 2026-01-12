@@ -13,6 +13,7 @@ import {
   MOCK_VULNERABLE_DEMOGRAPHICS as vulnerableDemographics
 } from "../lib/mock-disease-data";
 import HistoricalTrends from "./historical-trends";
+import { ALL_STATES } from "@/lib/all-states";
 import { exportToCSV, exportToJSON } from "@/lib/export";
 
 const yearComparisonData = [
@@ -299,8 +300,9 @@ export default function AnalyticsInsightsPage() {
         <TabsContent value="historical" className="space-y-4">
           <HistoricalTrends days={30} />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <HistoricalTrends state="Uttar Pradesh" days={30} />
-            <HistoricalTrends state="Maharashtra" days={30} />
+            {ALL_STATES.map((state) => (
+              <HistoricalTrends key={state} state={state} days={30} />
+            ))}
           </div>
         </TabsContent>
         {/* Success Metrics Tab */}
