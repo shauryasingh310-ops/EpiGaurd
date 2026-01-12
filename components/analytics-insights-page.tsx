@@ -12,22 +12,22 @@ import {
   MOCK_SEASONAL_INSIGHTS as seasonalInsights,
   MOCK_VULNERABLE_DEMOGRAPHICS as vulnerableDemographics
 } from "../lib/mock-disease-data";
-import { HistoricalTrends } from "./historical-trends";
+import HistoricalTrends from "./historical-trends";
 import { exportToCSV, exportToJSON } from "@/lib/export";
 
 const yearComparisonData = [
-  { month: "Jan", cases_2024: 120, cases_2023: 145, cases_2022: 156 },
-  { month: "Feb", cases_2024: 135, cases_2023: 158, cases_2022: 172 },
-  { month: "Mar", cases_2024: 148, cases_2023: 165, cases_2022: 189 },
-  { month: "Apr", cases_2024: 162, cases_2023: 178, cases_2022: 201 },
-  { month: "May", cases_2024: 189, cases_2023: 205, cases_2022: 238 },
-  { month: "Jun", cases_2024: 234, cases_2023: 267, cases_2022: 298 },
-  { month: "Jul", cases_2024: 301, cases_2023: 356, cases_2022: 387 },
-  { month: "Aug", cases_2024: 412, cases_2023: 478, cases_2022: 521 },
-  { month: "Sep", cases_2024: 356, cases_2023: 412, cases_2022: 467 },
-  { month: "Oct", cases_2024: 267, cases_2023: 298, cases_2022: 345 },
-  { month: "Nov", cases_2024: 178, cases_2023: 201, cases_2022: 234 },
-  { month: "Dec", cases_2024: 145, cases_2023: 167, cases_2022: 189 },
+  { month: "Jan", cases_2022: 1500, cases_2023: 1600, cases_2024: 1400, cases_2025: 1100 },
+  { month: "Feb", cases_2022: 1800, cases_2023: 1900, cases_2024: 1700, cases_2025: 1300 },
+  { month: "Mar", cases_2022: 2400, cases_2023: 2500, cases_2024: 2300, cases_2025: 1800 },
+  { month: "Apr", cases_2022: 3200, cases_2023: 3400, cases_2024: 3100, cases_2025: 2400 },
+  { month: "May", cases_2022: 5600, cases_2023: 6000, cases_2024: 5400, cases_2025: 4200 },
+  { month: "Jun", cases_2022: 14400, cases_2023: 15000, cases_2024: 13500, cases_2025: 10500 },
+  { month: "Jul", cases_2022: 38400, cases_2023: 42000, cases_2024: 37800, cases_2025: 29400 },
+  { month: "Aug", cases_2022: 62000, cases_2023: 70000, cases_2024: 63000, cases_2025: 49000 },
+  { month: "Sep", cases_2022: 56000, cases_2023: 63000, cases_2024: 56700, cases_2025: 44100 },
+  { month: "Oct", cases_2022: 46000, cases_2023: 51000, cases_2024: 45900, cases_2025: 35700 },
+  { month: "Nov", cases_2022: 25000, cases_2023: 28000, cases_2024: 25200, cases_2025: 19600 },
+  { month: "Dec", cases_2022: 14500, cases_2023: 16500, cases_2024: 14800, cases_2025: 11500 },
 ];
 
 export default function AnalyticsInsightsPage() {
@@ -68,7 +68,7 @@ export default function AnalyticsInsightsPage() {
           <Card className="bg-card border-border">
             <CardHeader>
               <CardTitle>Year-over-Year Disease Cases</CardTitle>
-              <CardDescription>Comparison of monthly cases across 2022-2024</CardDescription>
+              <CardDescription>Comparison of monthly cases across 2022-2025</CardDescription>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={320}>
@@ -81,7 +81,8 @@ export default function AnalyticsInsightsPage() {
                     itemStyle={{ color: "#fff" }}
                   />
                   <Legend />
-                  <Line type="monotone" dataKey="cases_2024" stroke="oklch(0.6 0.2 270)" strokeWidth={2} dot={{ r: 4, fill: "oklch(0.6 0.2 270)" }} name="2024 (Current)" />
+                  <Line type="monotone" dataKey="cases_2025" stroke="oklch(0.7 0.25 200)" strokeWidth={2} dot={{ r: 4, fill: "oklch(0.7 0.25 200)" }} name="2025 (Projected)" />
+                  <Line type="monotone" dataKey="cases_2024" stroke="oklch(0.6 0.2 270)" strokeWidth={2} dot={{ r: 4, fill: "oklch(0.6 0.2 270)" }} name="2024" />
                   <Line type="monotone" dataKey="cases_2023" stroke="oklch(0.5 0.15 240)" strokeWidth={2} dot={{ r: 4, fill: "oklch(0.5 0.15 240)" }} name="2023" />
                   <Line type="monotone" dataKey="cases_2022" stroke="oklch(0.4 0.1 280)" strokeWidth={2} dot={{ r: 4, fill: "oklch(0.4 0.1 280)" }} name="2022" />
                 </LineChart>
@@ -91,11 +92,11 @@ export default function AnalyticsInsightsPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Card className="bg-card border-border">
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Total Cases 2024</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted-foreground">Total Cases 2025</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-3xl font-bold text-primary">2,470</p>
-                <p className="text-xs text-green-400 mt-1">↓ 36% vs 2023</p>
+                <p className="text-3xl font-bold text-primary">151,400</p>
+                <p className="text-xs text-green-400 mt-1">↓ 21% vs 2024</p>
               </CardContent>
             </Card>
             <Card className="bg-card border-border">
@@ -103,8 +104,8 @@ export default function AnalyticsInsightsPage() {
                 <CardTitle className="text-sm font-medium text-muted-foreground">Peak Month Comparison</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-3xl font-bold text-primary">412</p>
-                <p className="text-xs text-green-400 mt-1">↓ Aug peak vs 521 in 2022</p>
+                <p className="text-3xl font-bold text-primary">49,000</p>
+                <p className="text-xs text-green-400 mt-1">↓ Aug peak vs 63,000 in 2024</p>
               </CardContent>
             </Card>
             <Card className="bg-card border-border">
@@ -112,7 +113,7 @@ export default function AnalyticsInsightsPage() {
                 <CardTitle className="text-sm font-medium text-muted-foreground">Overall Improvement</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-3xl font-bold text-primary">39%</p>
+                <p className="text-3xl font-bold text-primary">24%</p>
                 <p className="text-xs text-green-400 mt-1">Reduction since 2022</p>
               </CardContent>
             </Card>
@@ -181,7 +182,7 @@ export default function AnalyticsInsightsPage() {
                       paddingAngle={5}
                       cornerRadius={5}
                       fill="#8884d8"
-                      dataKey="severity"
+                      dataKey="severity_cases"
                       stroke="none"
                     >
                       {demographicData.map((_, index) => (
@@ -201,14 +202,20 @@ export default function AnalyticsInsightsPage() {
                       ))}
                     </Pie>
                     <Tooltip
-                      contentStyle={{
-                        backgroundColor: "rgba(0,0,0,0.8)",
-                        borderColor: "rgba(255,255,255,0.1)",
-                        backdropFilter: "blur(10px)",
-                        borderRadius: "8px",
-                        color: "#fff"
+                      content={({ active, payload }) => {
+                        if (active && payload && payload.length) {
+                          const data = payload[0].payload;
+                          return (
+                            <div style={{ background: "rgba(0,0,0,0.85)", borderRadius: 8, padding: 12, color: "#fff", minWidth: 180 }}>
+                              <div style={{ fontWeight: 600, marginBottom: 4 }}>{data.age_group}</div>
+                              <div>Severe Cases: <b>{data.severity_cases}</b></div>
+                              <div>Severity %: <b>{data.severity_percentage}%</b></div>
+                              <div>Total Cases: <b>{data.cases}</b></div>
+                            </div>
+                          );
+                        }
+                        return null;
                       }}
-                      itemStyle={{ color: "#fff" }}
                     />
                   </PieChart>
                 </ResponsiveContainer>

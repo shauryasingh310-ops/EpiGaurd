@@ -4,24 +4,24 @@ import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts"
 import { historicalStorage, HistoricalData } from "@/lib/storage"
+import { MOCK_HISTORICAL_TRENDS } from "@/lib/mock-historical-trends"
 import { TrendingUp, TrendingDown, Minus } from "lucide-react"
-
-interface HistoricalTrendsProps {
-  state?: string
-  days?: number
-}
-
-export function HistoricalTrends({ state, days = 30 }: HistoricalTrendsProps) {
-  const [trendData, setTrendData] = useState<HistoricalData[]>([])
-  const [trend, setTrend] = useState<"up" | "down" | "stable">("stable")
+export default function HistoricalTrends({ state, days = 30 }: { state?: string; days?: number }) {
+  const [trendData, setTrendData] = useState<any[]>([])
+  const [trend, setTrend] = useState<string>("stable")
 
   useEffect(() => {
     let cancelled = false
     const id = requestAnimationFrame(() => {
       if (cancelled) return
 
+      // Use mock data if local storage is empty
+      const all = historicalStorage.getAll()
+      const hasData = all && all.length > 0
+      const source = hasData ? all : MOCK_HISTORICAL_TRENDS
+
       if (state) {
-        const data = historicalStorage.getTrend(state, days)
+        const data = (hasData ? historicalStorage.getTrend(state, days) : source.filter((d: any) => d.state === state && new Date(d.date) >= new Date(Date.now() - days * 24 * 60 * 60 * 1000)))
         setTrendData(data)
 
         if (data.length >= 2) {
@@ -35,17 +35,16 @@ export function HistoricalTrends({ state, days = 30 }: HistoricalTrendsProps) {
         return
       }
 
-      const all = historicalStorage.getAll()
-      const recent = all
-        .filter((d) => {
+      const recent = source
+        .filter((d: any) => {
           const date = new Date(d.date)
           const cutoff = Date.now() - days * 24 * 60 * 60 * 1000
           return date.getTime() > cutoff
         })
-        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+        .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime())
 
       // Group by date and average
-      const grouped = recent.reduce((acc, item) => {
+      const grouped = recent.reduce((acc: Record<string, { date: string; total: number; count: number }>, item: any) => {
         const date = item.date
         if (!acc[date]) {
           acc[date] = { date, total: 0, count: 0 }
@@ -55,7 +54,7 @@ export function HistoricalTrends({ state, days = 30 }: HistoricalTrendsProps) {
         return acc
       }, {} as Record<string, { date: string; total: number; count: number }>)
 
-      const averaged = Object.values(grouped).map((g) => ({
+      const averaged = (Object.values(grouped) as { date: string; total: number; count: number }[]).map((g) => ({
         date: g.date,
         state: "Average",
         riskScore: Math.round(g.total / g.count),
@@ -67,13 +66,11 @@ export function HistoricalTrends({ state, days = 30 }: HistoricalTrendsProps) {
           waterQuality: "Unknown",
         },
       }))
-
       setTrendData(averaged)
     })
-
     return () => {
-      cancelled = true
       cancelAnimationFrame(id)
+      cancelled = true
     }
   }, [state, days])
 
