@@ -1,12 +1,12 @@
 # **Disease Outbreak Dashboard**
 
----
+----
 
 ## **Project Overview**
 
 I am visiting the **Disease Outbreak Dashboard** that is the web portal that is based on providing **prior warnings** and **monitoring the outbreak of diseases in India**. It grabs **real-time data**, feeds it through **machine-learning to predict it** and allows **members of the community to post what they observe** so that **users, authorities and health planners** are able to make **decisions infected by data**.
 
----
+----
 
 ## **Platform Focus**
 
@@ -17,26 +17,26 @@ I am visiting the **Disease Outbreak Dashboard** that is the web portal that is 
 - **Preparedness in response (insight and notification of health care)**
 ![alt text](<Screenshot 2026-01-01 201121.png>)
 
----
+----
 
 ## **Quick Start (Development Setup)**
 
 **Quick Start (Development Setup)** - a page that is used to ensure that you **run the project locally**.
 
----
+----
 
 ## **Environment Variables (.env.local)**
 
 You must make a file named **.env.local**, and put your **keys in this file**.
 
----
+----
 
 ### **Required keys**
 
 - **WEATHERAPIKEY** - retrieves **real time weather and environmental information** (humidity, rainfall, temperature, etc.) and **injects it into disease-risk estimations**.
 - **OPENROUTERAPIKEY** - drives the **outbreak ML prediction in the server** (up to **714 days ahead**). It keeps on the **server as a backup** and **raw calls are never passed to the front -end**. The division makes the app **secure and scalable**.
 
----
+----
 
 ## **Install & Run**
 
@@ -46,7 +46,7 @@ pnpm dev
 
 After you have run **pnpm**, dependencies have been **downloaded**, and **pnpm dev is started**. The application is **local** and is available to be **tested and developed**.
 
----
+----
 
 ## **API Endpoints**
 
@@ -56,11 +56,11 @@ The **API endpoints** that would power the dashboard are:
 - **GET /api/predictions** - rants more **rapid image reverse engineering of pre-computed outbreak prediction results** in the **cache**.
 - **POST /api/predictions** - initiates the **ML-based prediction trigger** with the **OPENROUTERAPIKEY** which may be **fresh or pre-calculated** and the **costs are low**.
 
----
+----
 
 ## **Defining Characteristics**
 
----
+----
 
 ### **Live Risk Map**
 
@@ -72,7 +72,7 @@ It has an **interactive map displaying the risk of outbreaks per state** in **he
 
 Get this **real-time information on dangerous areas**.
 
----
+----
 
 ### **Analytics Insights**
 
@@ -80,7 +80,7 @@ Show the **changes of risk with time**, allows you to **compare regions or perio
 
 **Purpose:** assists **policy makers and scientists** in examining the **trends of outbreaks in the long term**.
 
----
+----
 
 ### **ML Predictions (7-14 Days Ahead)**
 
@@ -88,7 +88,7 @@ Gathers data on **weather patterns**, **previous data on the disease** and monit
 
 **Purpose:** will provide you with a **head start on treatment** rather than **responding late**.
 
----
+----
 
 ### **Water Quality Monitor**
 
@@ -96,7 +96,7 @@ It displays a **map indicating the risk of water pollution**; a **hover popup in
 
 **Intent:** flags **water borne illnesses** such as **diarrhea, cholera and typhoid**.
 
----
+----
 
 ### **Community Reporting**
 
@@ -104,7 +104,7 @@ Any type of **local observations** anyone may be making like, **symptoms, water,
 
 **Value:** new data which **contributes to the models**; is **currently under development**.
 
----
+----
 
 ### **Healthcare Response Module**
 
@@ -112,7 +112,7 @@ Presents **local medical readiness** and relates to **regional health services a
 
 **Purpose:** tapers off the **risk-detect-respond disjunction**.
 
----
+----
 
 ### **Favorite Locations**
 
@@ -120,7 +120,7 @@ You will be in a position to **label high-profile locations with a colored badge
 
 **Application:** keep track of the **risks in locations of interest to you**.
 
----
+----
 
 ### **User Personalization**
 
@@ -128,7 +128,7 @@ You will be in a position to **label high-profile locations with a colored badge
 
 **Reason:** customized experience, which will **preserve privacy**.
 
----
+----
 
 ### **Accessibility**
 
@@ -136,7 +136,7 @@ You will be in a position to **label high-profile locations with a colored badge
 
 **Pledge:** everyone should have **equal access**.
 
----
+----
 
 ### **Notifications (Telegram Bot)**
 
@@ -144,7 +144,7 @@ There is a **Telegram bot** that marks **risk statuses** and leads users **direc
 
 **Purpose:** do not have to **open the app durability** to receive a **push notification**.
 
----
+----
 
 ## **Performance & Reliability**
 
@@ -156,7 +156,7 @@ There is a **Telegram bot** that marks **risk statuses** and leads users **direc
 
 **Features:** scalable and **production ready**.
 
----
+----
 
 ## **Planned & In-Progress**
 
@@ -167,7 +167,7 @@ There is a **Telegram bot** that marks **risk statuses** and leads users **direc
 
 This indicates that the project was **not quite dead and it is dynamic**.
 
----
+----
 
 ## **Tech Stack (Why Each Is Used)**
 
@@ -179,7 +179,7 @@ This indicates that the project was **not quite dead and it is dynamic**.
 - **LocalStorage – preferences**
 - **Vercel - scalability, deployment on clouds**
 
----
+----
 
 ## **Contributing Guidelines**
 
@@ -187,7 +187,7 @@ The repo is organized in a **clean manner**, and the **best practices** such as 
 
 **Hazard:** fosters **learning together**.
 
----
+----
 
 ## **Overall Impact**
 
@@ -200,13 +200,13 @@ The dashboard offers:
 
 It particularly applies to the **Smart India Hackathon**, **health programs** and **Disaster preparedness systems**.
 
----
+----
 
 ## Deployed Website
 
 https://epigaurd.vercel.app/
 
----
+----
 
 ## **Short Demo Vedio **
 
