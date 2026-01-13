@@ -210,7 +210,7 @@ https://epigaurd.vercel.app/
 
 ## **Short Demo Vedio **
 
-<video controls src="DemoVedio.mp4" title="Title"></video>
+Disease_Outbreak-main\DemoVedio.mp4
 
 ---
 
