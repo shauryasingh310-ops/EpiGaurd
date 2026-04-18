@@ -4,10 +4,11 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useTranslation } from "react-i18next"
 import { signOut, useSession } from "next-auth/react"
+import { useTheme } from "next-themes"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Settings, Bell, MapPin, Download, Trash2, Globe } from "lucide-react"
+import { Settings, Bell, MapPin, Download, Trash2, Globe, Sun, Moon } from "lucide-react"
 import { preferencesStorage, UserPreferences } from "@/lib/storage"
 import { ALL_STATES } from "@/lib/all-states"
 import { LanguageSwitcher } from "@/components/language-switcher"
@@ -15,7 +16,15 @@ import { LanguageSwitcher } from "@/components/language-switcher"
 export function SettingsPage() {
   const { t } = useTranslation()
   const { data: session } = useSession()
+  const { setTheme } = useTheme()
   const [preferences, setPreferences] = useState<UserPreferences>(preferencesStorage.get())
+  const [isThemeReady, setIsThemeReady] = useState(false)
+
+  useEffect(() => {
+    const storedTheme = preferencesStorage.get().theme
+    setTheme(storedTheme === "auto" ? "dark" : storedTheme)
+    setIsThemeReady(true)
+  }, [setTheme])
 
   const handleToggleThreshold = (riskLevel: "Low" | "Medium" | "High" | "Critical") => {
     const updated = preferences.alertThresholds.map((t) =>
@@ -40,6 +49,12 @@ export function SettingsPage() {
       localStorage.clear()
       window.location.reload()
     }
+  }
+
+  const handleThemeChange = (theme: "light" | "dark") => {
+    setTheme(theme)
+    const updated = preferencesStorage.save({ theme })
+    setPreferences(updated)
   }
 
   const handleExportData = async () => {
@@ -111,6 +126,44 @@ export function SettingsPage() {
           </div>
           <p className="text-xs text-muted-foreground" suppressHydrationWarning>
             {t("Languages") || "Your language preference will be saved and applied automatically when you reopen the application."}
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* Appearance Settings */}
+      <Card className="bg-card border-border">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Sun className="w-5 h-5" />
+            Appearance
+          </CardTitle>
+          <CardDescription>Switch between light and dark mode</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex gap-3">
+            <Button
+              type="button"
+              variant={preferences.theme === "light" ? "default" : "outline"}
+              onClick={() => handleThemeChange("light")}
+              disabled={!isThemeReady}
+              className="flex items-center gap-2"
+            >
+              <Sun className="w-4 h-4" />
+              Light
+            </Button>
+            <Button
+              type="button"
+              variant={preferences.theme === "dark" ? "default" : "outline"}
+              onClick={() => handleThemeChange("dark")}
+              disabled={!isThemeReady}
+              className="flex items-center gap-2"
+            >
+              <Moon className="w-4 h-4" />
+              Dark
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Your appearance preference is saved automatically.
           </p>
         </CardContent>
       </Card>

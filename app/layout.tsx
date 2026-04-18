@@ -6,6 +6,7 @@ import { WavyBackground } from "@/components/wavy-background"
 import { ErrorBoundary } from "@/components/error-boundary"
 import { I18nProvider } from "@/components/i18n-provider"
 import { AuthSessionProvider } from "@/components/auth-session-provider"
+import { ThemeProvider } from "@/components/theme-provider"
 import "./globals.css"
 
 const _geist = Geist({ subsets: ["latin"] })
@@ -36,22 +37,24 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <link rel="manifest" href="/manifest.json" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
       </head>
       <body className={`font-sans antialiased`}>
-        <ErrorBoundary>
-          <AuthSessionProvider>
-            <I18nProvider>
-              <WavyBackground />
-              <div className="relative z-10 w-full h-full">{children}</div>
-              <Analytics />
-            </I18nProvider>
-          </AuthSessionProvider>
-        </ErrorBoundary>
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} storageKey="epiguard-theme">
+          <ErrorBoundary>
+            <AuthSessionProvider>
+              <I18nProvider>
+                <WavyBackground />
+                <div className="relative z-10 w-full h-full">{children}</div>
+                <Analytics />
+              </I18nProvider>
+            </AuthSessionProvider>
+          </ErrorBoundary>
+        </ThemeProvider>
       </body>
     </html>
   )
