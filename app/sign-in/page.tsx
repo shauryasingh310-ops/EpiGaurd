@@ -59,6 +59,12 @@ function SignInPageInner() {
     if (formError) return formError
     if (!error) return null
     if (error === 'CredentialsSignin') return 'Invalid email or password.'
+    if (error === 'OAuthAccountNotLinked') {
+      return 'An account already exists with this email.'
+    }
+    if (error === 'EmailCreateAccount') {
+      return 'An account already exists with this email.'
+    }
     return 'Sign-in failed. Please try again.'
   }, [error, formError])
 
